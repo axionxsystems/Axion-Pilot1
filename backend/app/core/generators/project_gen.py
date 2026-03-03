@@ -39,14 +39,19 @@ def extract_json(text):
         except json.JSONDecodeError as e:
             print(f"DEBUG: Initial JSON parse failed: {e}")
 
-        # 4. Fallback: Fix common LLM JSON syntax errors (unescaped newlines)
+        # 4. Fallback: Fix common LLM JSON syntax errors (unescaped newlines or control characters)
         try:
-           # Naive cleanup for control characters
-           import re
-           # Remove control characters
-           clean_str = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', json_str) 
-           # Escape newlines inside strings if needed (simple approach)
-           clean_str = clean_str.replace('\n', '\\n')
+           # Clean non-printable control characters BUT preserve \n, \r, \t
+           # \x00-\x08, \x0b-\x0c, \x0e-\x1f, \x7f
+           clean_str = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', json_str)
+           
+           # Escape literal newlines strictly inside double-quoted strings
+           def escape_newlines(match):
+               return match.group(0).replace('\n', '\\n').replace('\r', '\\r')
+           
+           # This regex matches double-quoted strings including escaped quotes
+           clean_str = re.sub(r'"(?:[^"\\]|\\.)*"', escape_newlines, clean_str, flags=re.DOTALL)
+           
            return json.loads(clean_str, strict=False)
         except Exception as e:
            print(f"DEBUG: Fallback parsing failed: {e}")
