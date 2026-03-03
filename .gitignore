@@ -1,0 +1,40 @@
+# General
+.DS_Store
+*.pem
+.idea/
+.vscode/
+
+# Frontend (Node/Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/.vercel/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Backend (Python/FastAPI)
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/venv/
+backend/.venv/
+backend/env/
+backend/.env
+backend/*.db
+backend/*.sqlite3
+backend/sql_app.db
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+
+# OS
+Thumbs.db
