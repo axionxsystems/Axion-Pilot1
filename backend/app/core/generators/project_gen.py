@@ -63,12 +63,13 @@ def extract_json(text):
         print(f"JSON Parse Error: {e}")
         return None
 
-def generate_project(api_key, domain, topic, difficulty, tech_stack, level):
+def generate_project(api_key, domain, topic, description, difficulty, tech_stack, level):
     client = LLMClient(api_key=api_key)
     
     prompt = PROJECT_STRUCTURE_PROMPT.format(
         domain=domain,
         topic=topic,
+        description=description,
         difficulty=difficulty,
         tech_stack=tech_stack,
         level=level

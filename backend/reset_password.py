@@ -20,4 +20,4 @@ def reset_password(email, new_password):
         db.close()
 
 if __name__ == "__main__":
-    reset_password("khilanmangukiya@gmail.com", "password123")
+    reset_password("niyantjoshi@gmail.com", "password123")

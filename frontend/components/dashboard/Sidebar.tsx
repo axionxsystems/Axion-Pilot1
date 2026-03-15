@@ -57,7 +57,7 @@ export function Sidebar({ className }: SidebarProps) {
     return (
         <aside
             className={cn(
-                "hidden md:flex flex-col border-r bg-card/50 backdrop-blur-xl h-screen transition-all duration-300 ease-in-out relative z-30",
+                "hidden md:flex flex-col border-r border-border/40 bg-card/40 backdrop-blur-2xl h-screen transition-all duration-300 ease-in-out relative z-30",
                 collapsed ? "w-20" : "w-64",
                 className
             )}
@@ -85,10 +85,10 @@ export function Sidebar({ className }: SidebarProps) {
                         >
                             <span
                                 className={cn(
-                                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors mb-1",
+                                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-1",
                                     isActive
-                                        ? "bg-primary/10 text-primary"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                        ? "bg-primary/10 text-primary shadow-sm"
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                                     collapsed && "justify-center px-2"
                                 )}
                             >
@@ -100,17 +100,17 @@ export function Sidebar({ className }: SidebarProps) {
                 })}
             </div>
 
-            <div className="p-4 border-t border-border/50">
+            <div className="p-4 border-t border-border/40">
                 <Button
                     variant="ghost"
                     className={cn(
-                        "w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+                        "w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all duration-200",
                         collapsed && "justify-center px-0"
                     )}
                     onClick={logout}
                 >
                     <LogOut className="h-5 w-5" />
-                    {!collapsed && <span className="ml-3">Log out</span>}
+                    {!collapsed && <span className="ml-3 font-medium">Log out</span>}
                 </Button>
             </div>
         </aside>

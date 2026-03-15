@@ -20,7 +20,7 @@ export default function LoginPage() {
         try {
             await login(email, password);
         } catch (err: any) {
-            setError("Invalid credentials. Please checking your email and password.");
+            setError("Invalid credentials. Please check your email and password.");
         } finally {
             setLoading(false);
         }

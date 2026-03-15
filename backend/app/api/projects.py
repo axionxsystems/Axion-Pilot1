@@ -20,6 +20,7 @@ async def create_project(request: ProjectRequest, current_user: User = Depends(g
             api_key=request.api_key,
             domain=request.domain,
             topic=request.topic,
+            description=request.description,
             difficulty=request.difficulty,
             tech_stack=request.tech_stack,
             level=request.year

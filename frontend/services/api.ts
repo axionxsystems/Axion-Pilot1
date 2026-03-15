@@ -15,6 +15,7 @@ export interface ProjectRequest {
     api_key: string;
     domain: string;
     topic?: string;
+    description?: string;
     difficulty: string;
     tech_stack: string;
     year: string;
@@ -40,7 +41,10 @@ export const api = {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData,
         });
-        if (!res.ok) throw new Error('Login failed');
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Login failed');
+        }
         return res.json();
     },
 

@@ -2,23 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
-import { useAuth } from "@/components/AuthProvider";
-import { Logo } from "@/components/ui/Logo";
-import { cn } from "@/lib/utils";
+import { Menu, X, Rocket, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Handle scroll effect
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -29,111 +23,100 @@ const Navbar = () => {
     { name: "FAQ", href: "#faq" },
   ];
 
-  const handleLogoClick = (e: React.MouseEvent) => {
-    if (user) {
-      e.preventDefault();
-      router.push("/dashboard");
-    }
-  };
-
-  if (pathname.startsWith("/dashboard")) return null; // Don't show this navbar on dashboard
-
   return (
-    <nav
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled ? "bg-background/80 backdrop-blur-md border-b" : "bg-transparent"
-      )}
+    <motion.nav
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? "glass-nav py-3" : "py-5 px-6"
+      }`}
     >
-      <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Logo onClick={handleLogoClick} />
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#7C3AED] flex items-center justify-center text-white shadow-lg group-hover:shadow-indigo-500/50 transition-all duration-300">
+              <Rocket size={18} />
+            </div>
+            <span className="font-bold text-xl tracking-tight text-[#0F172A] dark:text-white">
+              ProjectPilot
+            </span>
+          </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {link.name}
-            </Link>
-          ))}
-        </div>
-
-        {/* Desktop CTA */}
-        <div className="hidden md:flex items-center gap-4">
-          {!loading && (
-            <>
-              {user ? (
-                <Link href="/dashboard">
-                  <Button variant="default" className="rounded-full px-6">
-                    Dashboard
-                  </Button>
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-8">
+            <div className="flex items-center gap-6">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="text-sm font-medium text-[#475569] hover:text-[#0F172A] dark:text-gray-300 dark:hover:text-white transition-colors"
+                >
+                  {link.name}
                 </Link>
-              ) : (
-                <>
-                  <Link href="/login">
-                    <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                      Log in
-                    </Button>
-                  </Link>
-                  <Link href="/signup">
-                    <Button className="rounded-full px-6 bg-foreground text-background hover:bg-foreground/90">
-                      Get Started
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </>
-          )}
-        </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/login"
+                className="text-sm font-medium text-[#475569] hover:text-[#0F172A] dark:text-gray-300 dark:hover:text-white transition-colors"
+              >
+                Login
+              </Link>
+              <Link href="/signup">
+                <button className="btn-gradient px-5 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 group">
+                  Get Started
+                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+            </div>
+          </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 text-foreground"
-        >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+          {/* Mobile Menu Toggle */}
+          <button
+            className="md:hidden text-[#0F172A] dark:text-white"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-background border-b animate-in slide-in-from-top-5">
-          <div className="flex flex-col p-4 gap-4">
+      {/* Mobile Nav */}
+      {isMobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:hidden absolute top-full left-0 right-0 glass-nav border-t bg-white/95"
+        >
+          <div className="flex flex-col px-6 py-4 gap-4">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                onClick={() => setIsOpen(false)}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground px-4 py-2"
+                className="text-base font-medium text-[#475569] hover:text-[#0F172A]"
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 {link.name}
               </Link>
             ))}
-            <div className="h-px bg-border my-2" />
-            {user ? (
-              <Link href="/dashboard" onClick={() => setIsOpen(false)}>
-                <Button className="w-full">Dashboard</Button>
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Log in</Button>
-                </Link>
-                <Link href="/signup" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full">Get Started</Button>
-                </Link>
-              </>
-            )}
+            <div className="h-px bg-gray-200 my-2" />
+            <Link
+              href="/login"
+              className="text-base font-medium text-[#475569] hover:text-[#0F172A]"
+            >
+              Login
+            </Link>
+            <Link href="/signup" className="w-full">
+              <button className="w-full btn-gradient py-3 rounded-xl text-base font-semibold">
+                Get Started
+              </button>
+            </Link>
           </div>
-        </div>
+        </motion.div>
       )}
-    </nav>
+    </motion.nav>
   );
 };
 
 export default Navbar;
-

@@ -5,6 +5,7 @@ class ProjectRequest(BaseModel):
     api_key: str
     domain: str
     topic: Optional[str] = "Random innovative topic"
+    description: Optional[str] = ""
     difficulty: str
     tech_stack: str
     year: str

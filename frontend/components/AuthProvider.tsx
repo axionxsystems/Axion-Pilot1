@@ -7,8 +7,8 @@ import { api, User } from "../services/api";
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (email, password) => Promise<void>;
-    signup: (email, password) => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
+    signup: (email: string, password: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -35,17 +35,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         initAuth();
     }, []);
 
-    const login = async (email, password) => {
-        const data = await api.login(email, password);
-        localStorage.setItem("token", data.access_token);
-        const userData = await api.getMe();
-        setUser(userData);
-        router.push("/dashboard");
+    const login = async (email: string, password: string) => {
+        try {
+            const data = await api.login(email, password);
+            localStorage.setItem("token", data.access_token);
+            const userData = await api.getMe();
+            setUser(userData);
+            router.push("/dashboard");
+        } catch (error: any) {
+            console.error("Login failed:", error);
+            throw error;
+        }
     };
 
-    const signup = async (email, password) => {
-        await api.signup(email, password);
-        await login(email, password);
+    const signup = async (email: string, password: string) => {
+        try {
+            await api.signup(email, password);
+            await login(email, password);
+        } catch (error: any) {
+            console.error("Signup failed:", error);
+            throw error;
+        }
     };
 
     const logout = () => {

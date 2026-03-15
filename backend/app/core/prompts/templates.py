@@ -2,6 +2,7 @@ PROJECT_STRUCTURE_PROMPT = """
 Generate a comprehensive project structure for a college project with the following details:
 Domain: {domain}
 Topic: {topic}
+Project Description: {description}
 Difficulty: {difficulty}
 Tech Stack: {tech_stack}
 Academic Level: {level}
