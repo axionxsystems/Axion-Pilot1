@@ -29,91 +29,110 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
     };
 
     return (
-        <div className="glass mt-8 p-6 rounded-3xl border border-white/10 relative overflow-hidden">
-            <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+        <div className="bg-card border border-border/50 rounded-[2rem] p-6 shadow-sm animate-fade-in-up relative overflow-hidden mt-8">
+            <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
                     <Bot className="w-6 h-6" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-white">Viva Assistant</h2>
-                    <p className="text-xs text-muted-foreground">Ask questions about your project architecture</p>
+                    <h2 className="text-xl font-bold text-foreground tracking-tight">Viva Assistant</h2>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                        <Sparkles className="w-3 h-3 text-accent" />
+                        AI Powered Interview Coach
+                    </p>
                 </div>
             </div>
 
+            {/* API Key Box - Fixed Styling */}
             {!apiKey && (
-                <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                    <label className="text-xs font-semibold text-emerald-400 block mb-2 flex items-center gap-2">
-                        <Key className="w-4 h-4" />
-                        Enter Groq API Key to Start Chat
+                <div className="mb-6 p-5 rounded-2xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="text-xs font-bold text-primary block mb-3 uppercase tracking-[0.1em] flex items-center gap-2">
+                        <Key className="w-3.5 h-3.5" />
+                        Groq API Configuration
                     </label>
-                    <input
-                        type="password"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className="w-full text-sm p-3 rounded-lg bg-black/40 border border-emerald-500/30 text-emerald-100 placeholder:text-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                        placeholder="gsk_..."
-                    />
+                    <div className="relative group">
+                        <input
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            className="w-full text-sm py-3 px-4 rounded-xl bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
+                            placeholder="Paste your gsk_... key here"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase">
+                           Encrypted
+                        </div>
+                    </div>
                 </div>
             )}
 
-            <div className="bg-black/40 rounded-2xl border border-white/5 h-[400px] overflow-y-auto p-4 mb-4 space-y-4 scrollbar-ios">
+            <div className="bg-muted/30 rounded-[1.5rem] border border-border/40 h-[400px] overflow-y-auto p-5 mb-4 space-y-4 scrollbar-hide relative shadow-inner">
                 {messages.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
-                        <Bot className="w-12 h-12 mb-3" />
-                        <p className="text-sm">Ready to help you prepare!</p>
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground/40 space-y-4">
+                        <div className="w-16 h-16 rounded-3xl bg-muted/50 flex items-center justify-center">
+                            <Bot className="w-8 h-8" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-bold text-muted-foreground">Ready to start your prep?</p>
+                            <p className="text-xs">Ask specific architecture or code questions.</p>
+                        </div>
                     </div>
                 )}
                 {messages.map((m, i) => (
-                    <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                         {m.role === 'assistant' && (
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                                <Bot className="w-4 h-4 text-emerald-400" />
+                            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 shadow-sm">
+                                <Bot className="w-4 h-4 text-primary" />
                             </div>
                         )}
-                        <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${m.role === 'user'
-                                ? 'bg-primary text-white rounded-br-none'
-                                : 'bg-white/10 text-slate-200 rounded-bl-none border border-white/5'
+                        <div className={`max-w-[85%] rounded-[1.25rem] px-5 py-3.5 text-sm leading-relaxed shadow-sm ${m.role === 'user'
+                                ? 'bg-primary text-primary-foreground rounded-tr-none font-medium'
+                                : 'bg-card text-foreground rounded-tl-none border border-border/50 font-medium'
                             }`}>
                             {m.content}
                         </div>
                         {m.role === 'user' && (
-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                <User className="w-4 h-4 text-primary" />
+                            <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center shrink-0 shadow-sm border border-accent/20">
+                                <User className="w-4 h-4 text-accent" />
                             </div>
                         )}
                     </div>
                 ))}
                 {loading && (
-                    <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                            <Bot className="w-4 h-4 text-emerald-400" />
+                    <div className="flex gap-3 animate-pulse">
+                        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Bot className="w-4 h-4 text-primary" />
                         </div>
-                        <div className="bg-white/5 rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" />
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce delay-100" />
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce delay-200" />
+                        <div className="bg-card border border-border/50 rounded-[1.25rem] rounded-tl-none px-5 py-4 flex items-center gap-1.5 shadow-sm">
+                            <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
+                            <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]" />
+                            <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]" />
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="relative">
-                <input
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask a question..."
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                    disabled={!apiKey || loading}
-                />
-                <button
-                    onClick={handleSend}
-                    disabled={loading || !apiKey}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors disabled:opacity-0 disabled:pointer-events-none"
-                >
-                    <Send className="w-4 h-4" />
-                </button>
+            <div className="relative group p-0.5 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-[1.25rem]">
+                <div className="bg-background rounded-[1.1rem] overflow-hidden flex items-center">
+                    <input
+                        className="flex-1 bg-transparent pl-5 pr-14 py-4 text-sm text-foreground focus:outline-none placeholder:text-muted-foreground/50 font-medium"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={apiKey ? "Ask about your project..." : "Enter API key above to chat"}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        disabled={!apiKey || loading}
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={loading || !apiKey}
+                        className="absolute right-2.5 p-2.5 bg-primary text-primary-foreground rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-0 shadow-lg shadow-primary/20"
+                    >
+                        <Send className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
+            <p className="text-[10px] text-center text-muted-foreground/60 mt-4 uppercase tracking-[0.2em] font-bold">
+                Project Architect v1.0 • AI Analysis Active
+            </p>
         </div>
-    )
+    );
 }

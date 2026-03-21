@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProjectForm from "../../components/ProjectForm";
 import AuthGuard from "../../components/AuthGuard";
 import { useAuth } from "../../components/AuthProvider";
@@ -9,11 +9,32 @@ import DownloadButton from "../../components/DownloadButton";
 import { StatsSection, ActivityFeed, SuggestionPanel, RecentProjectsList, ProjectProgressTracker } from "../../components/dashboard/Widgets";
 import { api } from "../../services/api";
 import Link from "next/link";
-import { LogOut, Sparkles, FileText, Download, Code, MonitorPlay, Settings, Layers, ArrowRight, Clock } from "lucide-react";
+import { LogOut, Sparkles, FileText, Download, Code, MonitorPlay, Settings, Layers, ArrowRight, Clock, BookOpen, Database, Cpu, Rocket } from "lucide-react";
 
 export default function Dashboard() {
     const [project, setProject] = useState<any>(null);
+    const [stats, setStats] = useState<any>(null);
+    const [recentProjects, setRecentProjects] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const { user } = useAuth();
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [statsData, projectsData] = await Promise.all([
+                    api.getUserStats(),
+                    api.listProjects()
+                ]);
+                setStats(statsData);
+                setRecentProjects(projectsData || []);
+            } catch (err) {
+                console.error("Failed to fetch dashboard data", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
@@ -28,28 +49,53 @@ export default function Dashboard() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="bg-background border border-border/50 text-foreground hover:bg-muted/50 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm">
-                        <Settings className="w-4 h-4" />
-                        Settings
-                    </button>
-                    <Link href="/dashboard/new">
-                        <div className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]">
-                            <Sparkles className="w-4 h-4" />
-                            New Project
-                        </div>
+                    <Link href="/dashboard/projects">
+                        <button className="bg-background border border-border/50 text-foreground hover:bg-muted/50 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm">
+                            <Layers className="w-4 h-4" />
+                            My Vault
+                        </button>
                     </Link>
+                    <button 
+                        onClick={() => { setProject(null); window.scrollTo({ top: 800, behavior: 'smooth' }); }}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        New Project
+                    </button>
                 </div>
             </div>
 
             {!project ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8 pb-12">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8 pb-12 text-sm">
                     <div className="lg:col-span-8 space-y-8">
-                        <StatsSection />
+                        <StatsSection data={stats} />
+                        
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            <RecentProjectsList />
+                            <RecentProjectsList projects={recentProjects} />
                             <ProjectProgressTracker />
                         </div>
-                        <div className="mt-8">
+
+                        {/* Generate Project CTA */}
+                        <div className="bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+                            <div className="space-y-4 relative z-10">
+                                <div className="p-3 bg-white/50 w-fit rounded-2xl shadow-sm border border-white/80">
+                                    <Rocket className="w-8 h-8 text-primary" />
+                                </div>
+                                <h2 className="text-3xl font-black text-foreground">Ready to Build Something Big?</h2>
+                                <p className="text-muted-foreground font-medium max-w-sm">Use our advanced AI engine to turn your project ideas into production-ready assets in seconds.</p>
+                                <button 
+                                    onClick={() => document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth' })}
+                                    className="px-8 py-3 bg-primary text-primary-foreground font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all"
+                                >
+                                    Launch Generator 🚀
+                                </button>
+                            </div>
+                            <div className="hidden md:block absolute -right-10 -bottom-10 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Sparkles className="w-80 h-80 text-primary rotate-12" />
+                            </div>
+                        </div>
+
+                        <div id="project-form" className="mt-8 scroll-mt-20">
                             <ProjectForm onProjectGenerated={setProject} />
                         </div>
                     </div>
@@ -105,51 +151,120 @@ export default function Dashboard() {
                             </div>
 
                             <div className="p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-12">
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                            <FileText className="w-4 h-4" />
+                                <div className="space-y-8">
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                <FileText className="w-4 h-4" />
+                                            </div>
+                                            Abstract
+                                        </h3>
+                                        <div className="prose prose-sm max-w-none">
+                                            <p className="text-base leading-relaxed text-foreground/80 font-medium">{project.abstract}</p>
                                         </div>
-                                        Abstract
-                                    </h3>
-                                    <div className="prose prose-sm max-w-none">
-                                        <p className="text-base leading-relaxed text-foreground/80 font-medium">{project.abstract}</p>
                                     </div>
+
+                                    {project.features && project.features.length > 0 && (
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-500 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                                    <Sparkles className="w-4 h-4" />
+                                                </div>
+                                                Key Features
+                                            </h3>
+                                            <ul className="grid grid-cols-1 gap-2">
+                                                {project.features.map((f: string, i: number) => (
+                                                    <li key={i} className="flex items-center gap-2 text-sm text-foreground/70 font-medium bg-muted/30 px-3 py-2 rounded-xl border border-border/40">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                        {f}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {project.literature_survey && (
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-blue-500 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                                    <BookOpen className="w-4 h-4" />
+                                                </div>
+                                                Literature Survey
+                                            </h3>
+                                            <div className="prose prose-sm max-w-none p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+                                                <p className="text-sm leading-relaxed text-foreground/80 italic font-medium">"{project.literature_survey}"</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-accent flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                                            <Layers className="w-4 h-4" />
+
+                                <div className="space-y-8">
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-accent flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                                                <Layers className="w-4 h-4" />
+                                            </div>
+                                            Technical Architecture
+                                        </h3>
+                                        <div className="prose prose-sm max-w-none">
+                                            <p className="text-base leading-relaxed text-foreground/80 font-medium">{project.architecture_description}</p>
                                         </div>
-                                        Architecture
-                                    </h3>
-                                    <div className="prose prose-sm max-w-none">
-                                        <p className="text-base leading-relaxed text-foreground/80 font-medium">{project.architecture_description}</p>
                                     </div>
+
+                                    {project.database_design && (
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-orange-500 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                                                    <Database className="w-4 h-4" />
+                                                </div>
+                                                Database Blueprint
+                                            </h3>
+                                            <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/10 text-xs font-mono text-foreground/80 overflow-x-auto">
+                                                <pre className="whitespace-pre-wrap">{project.database_design}</pre>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {project.methodology && (
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-purple-500 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                                    <Cpu className="w-4 h-4" />
+                                                </div>
+                                                Methodology
+                                            </h3>
+                                            <div className="prose prose-sm max-w-none">
+                                                <p className="text-sm leading-relaxed text-foreground/70 font-medium">{project.methodology}</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="p-8 md:p-12 bg-muted/10 border-t flex flex-col md:flex-row gap-6">
                                 <div className="flex-1 space-y-4">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Download Assets</p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Download Professional Assets</p>
+                                        <span className="text-[10px] font-black bg-primary/20 text-primary px-2 py-0.5 rounded-md uppercase">High-Quality Output</span>
+                                    </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <DownloadButton
-                                            label="Project Report"
+                                            label="Full Report"
                                             filename="project_report.docx"
                                             onClick={() => api.downloadReport(project)}
-                                            className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm"
+                                            className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm transition-all hover:scale-[1.02]"
                                         />
                                         <DownloadButton
-                                            label="Presentation"
+                                            label="PPT Presentation"
                                             filename="project_presentation.pptx"
                                             onClick={() => api.downloadPPT(project)}
-                                            className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm"
+                                            className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm transition-all hover:scale-[1.02]"
                                         />
                                         <DownloadButton
-                                            label="Source Code"
+                                            label="Production Code"
                                             filename="project_code.zip"
                                             onClick={() => api.downloadCode(project)}
-                                            className="h-14 rounded-2xl font-bold bg-primary text-primary-foreground hover:opacity-90 border-none shadow-lg shadow-primary/20"
+                                            className="h-14 rounded-2xl font-bold bg-primary text-primary-foreground hover:opacity-90 border-none shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
                                         />
                                     </div>
                                 </div>

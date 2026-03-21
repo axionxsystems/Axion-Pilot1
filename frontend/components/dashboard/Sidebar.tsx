@@ -9,7 +9,10 @@ import {
     CreditCard,
     LogOut,
     ChevronLeft,
-    User
+    User,
+    Layers,
+    Shield,
+    Pencil
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,7 +27,7 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
 
     const links = [
         {
@@ -33,10 +36,15 @@ export function Sidebar({ className }: SidebarProps) {
             icon: LayoutDashboard
         },
         {
-            name: "New Project",
-            href: "/dashboard",
-            icon: PlusCircle
+            name: "My Projects",
+            href: "/dashboard/projects",
+            icon: Layers
         },
+        ...(user?.email === "niyant214@gmail.com" ? [{
+            name: "Admin Hub",
+            href: "/dashboard/admin",
+            icon: Shield
+        }] : []),
         {
             name: "Profile",
             href: "/dashboard/profile",
@@ -75,7 +83,7 @@ export function Sidebar({ className }: SidebarProps) {
                 </Button>
             </div>
 
-            <div className="flex-1 px-3 py-4 space-y-1">
+            <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-hide">
                 {links.map((link) => {
                     const isActive = pathname === link.href;
                     return (

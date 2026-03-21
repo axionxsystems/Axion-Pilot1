@@ -15,6 +15,22 @@ from app.database import get_db
 from app.schemas.user import UserPasswordUpdate
 from app.auth.utils import verify_password, get_password_hash
 
+from pydantic import BaseModel
+from typing import Optional
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+
+@router.put("/me", response_model=UserResponse)
+def update_user_me(
+    user_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user_data.name is not None:
+        current_user.name = user_data.name
+    db.commit()
+    return current_user
+
 @router.put("/me/password")
 def update_password(
     password_data: UserPasswordUpdate,

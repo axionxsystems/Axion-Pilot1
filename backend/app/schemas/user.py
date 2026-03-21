@@ -7,6 +7,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    full_name: Optional[str] = None
+    mobile: Optional[str] = None
 
 class UserLogin(UserBase):
     password: str
@@ -19,7 +21,10 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     plan: str
+    is_admin: bool
     created_at: datetime
+    name: Optional[str] = None
+    mobile: Optional[str] = None
 
     class Config:
         from_attributes = True

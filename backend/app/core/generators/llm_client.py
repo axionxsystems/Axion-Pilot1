@@ -31,16 +31,17 @@ class LLMClient:
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
-    def generate(self, prompt, system_prompt="You are a helpful AI assistant."):
+    def generate(self, prompt, system_prompt="You are a helpful AI assistant.", model=None, temperature=0.7, max_tokens=4096):
         try:
+            target_model = model or self.model
             chat_completion = self.client.chat.completions.create(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                model=self.model,
-                temperature=0.7,
-                max_tokens=4096, # Ensure enough context for code/reports
+                model=target_model,
+                temperature=temperature,
+                max_tokens=max_tokens, # Ensure enough context for code/reports
             )
             return chat_completion.choices[0].message.content
         except Exception as e:

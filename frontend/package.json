@@ -26,6 +26,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cva": "^0.0.0",
+    "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.36.0",
     "lru-cache": "^11.2.7",
@@ -33,6 +34,7 @@
     "next": "14.2.15",
     "react": "^18",
     "react-dom": "^18",
+    "recharts": "^3.8.0",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7"
   },

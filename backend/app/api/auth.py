@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from app.database import get_db
 from app.models.user import User
+from app.models.activity import Activity
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.auth.utils import get_password_hash, verify_password
 from app.auth.jwt_handler import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -18,10 +19,26 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_password = get_password_hash(user.password)
-    new_user = User(email=user.email, hashed_password=hashed_password)
+    
+    # Check for admin email
+    is_admin = user.email.lower() == "niyant214@gmail.com"
+    
+    new_user = User(
+        email=user.email,
+        name=user.full_name,
+        mobile=user.mobile,
+        hashed_password=hashed_password,
+        is_admin=is_admin
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # Log Activity
+    log = Activity(user_id=new_user.id, action_type="USER_REG", description=f"New user registered: {new_user.email}")
+    db.add(log)
+    db.commit()
+
     return new_user
 
 @router.post("/login", response_model=Token)
@@ -41,6 +58,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Sync admin status for super-admin
+    if user.email.lower() == "niyant214@gmail.com" and not user.is_admin:
+        user.is_admin = True
+        db.commit()
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

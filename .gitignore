@@ -4,8 +4,11 @@
 .idea/
 .vscode/
 
+# Node modules (anywhere in the repo)
+node_modules/
+**/node_modules/
+
 # Frontend (Node/Next.js)
-frontend/node_modules/
 frontend/.next/
 frontend/out/
 frontend/build/
@@ -23,6 +26,7 @@ frontend/yarn-error.log*
 
 # Backend (Python/FastAPI)
 backend/__pycache__/
+backend/**/__pycache__/
 backend/*.py[cod]
 backend/*$py.class
 backend/venv/
@@ -35,6 +39,10 @@ backend/sql_app.db
 backend/.pytest_cache/
 backend/.coverage
 backend/htmlcov/
+
+# Temp / migration helpers
+tmp/
+backend/add_mobile_column.py
 
 # OS
 Thumbs.db

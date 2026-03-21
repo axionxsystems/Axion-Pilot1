@@ -8,7 +8,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
-    signup: (email: string, password: string) => Promise<void>;
+    signup: (email: string, password: string, full_name?: string, mobile?: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -41,16 +41,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem("token", data.access_token);
             const userData = await api.getMe();
             setUser(userData);
-            router.push("/dashboard");
+            if (userData.is_admin) {
+                router.push("/dashboard/admin");
+            } else {
+                router.push("/dashboard");
+            }
         } catch (error: any) {
             console.error("Login failed:", error);
             throw error;
         }
     };
 
-    const signup = async (email: string, password: string) => {
+    const signup = async (email: string, password: string, full_name?: string, mobile?: string) => {
         try {
-            await api.signup(email, password);
+            await api.signup(email, password, full_name, mobile);
             await login(email, password);
         } catch (error: any) {
             console.error("Signup failed:", error);

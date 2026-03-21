@@ -11,6 +11,8 @@ class ProjectRequest(BaseModel):
     year: str
 
 class ProjectResponse(BaseModel):
+    id: Optional[int] = None
+    created_at: Optional[str] = None
     title: str
     abstract: str
     problem_statement: Optional[str] = ""
@@ -20,9 +22,15 @@ class ProjectResponse(BaseModel):
     viva_questions: List[Dict[str, str]] = []
     tags: List[str] = []
     estimated_completion_time: Optional[str] = ""
-    # Optional fields for compatibility if needed
+    domain: Optional[str] = ""
+    difficulty: Optional[str] = ""
+    # Pipeline fields
     features: Optional[List[str]] = []
-    tech_stack: Optional[List[str]] = []
+    database_design: Optional[str] = ""
+    logic_flow: Optional[str] = ""
+    literature_survey: Optional[str] = ""
+    methodology: Optional[str] = ""
+    security_measures: Optional[str] = ""
 
 class VivaRequest(BaseModel):
     api_key: str

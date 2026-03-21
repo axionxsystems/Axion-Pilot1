@@ -3,32 +3,14 @@ import { Sparkles, FileText, Presentation, MessageSquare, Briefcase, Activity, C
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-const stats = [
-    { label: "Projects Generated", value: "12", icon: Briefcase, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Reports Created", value: "34", icon: FileText, color: "text-purple-500", bg: "bg-purple-500/10" },
-    { label: "Presentations", value: "28", icon: Presentation, color: "text-pink-500", bg: "bg-pink-500/10" },
-    { label: "Upcoming Viva", value: "3", icon: MessageSquare, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-];
+export function StatsSection({ data }: { data: any }) {
+    const stats = [
+        { label: "Projects Generated", value: data?.projects_generated || "0", icon: Briefcase, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { label: "Reports Created", value: data?.reports_created || "0", icon: FileText, color: "text-purple-500", bg: "bg-purple-500/10" },
+        { label: "Presentations", value: data?.presentations_created || "0", icon: Presentation, color: "text-pink-500", bg: "bg-pink-500/10" },
+        { label: "Viva Questions", value: data?.viva_questions || "0", icon: MessageSquare, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    ];
 
-const activities = [
-    { text: "Generated abstract for Face Recognition", time: "2m ago", icon: FileText, type: "report" },
-    { text: "Compiled React codebase", time: "15m ago", icon: Briefcase, type: "code" },
-    { text: "Created 12 Viva questions", time: "1h ago", icon: MessageSquare, type: "viva" },
-    { text: "Designed PPT for Blockchain system", time: "3h ago", icon: Presentation, type: "presentation" }
-];
-
-const suggestions = [
-    { title: "AI Resume Analyzer", domain: "Machine Learning", diff: "Intermediate" },
-    { title: "Blockchain Voting System", domain: "Blockchain", diff: "Advanced" },
-    { title: "IoT Smart Agriculture", domain: "IoT", diff: "Beginner" }
-];
-
-const recentProjects = [
-    { name: "Face Recognition Attendance", progress: 100, status: "Completed" },
-    { name: "Stock Predictor AI", progress: 60, status: "In Progress" },
-];
-
-export function StatsSection() {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in-up">
             {stats.map((stat, i) => (
@@ -47,6 +29,13 @@ export function StatsSection() {
 }
 
 export function ActivityFeed() {
+    const activities = [
+        { text: "Generated abstract for Face Recognition", time: "2m ago", icon: FileText, type: "report" },
+        { text: "Compiled React codebase", time: "15m ago", icon: Briefcase, type: "code" },
+        { text: "Created 12 Viva questions", time: "1h ago", icon: MessageSquare, type: "viva" },
+        { text: "Designed PPT for Blockchain system", time: "3h ago", icon: Presentation, type: "presentation" }
+    ];
+
     return (
         <div className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm flex flex-col h-full animate-fade-in-up" style={{ animationDelay: '100ms' }}>
             <div className="flex items-center gap-2 mb-6">
@@ -82,6 +71,12 @@ export function ActivityFeed() {
 }
 
 export function SuggestionPanel() {
+    const suggestions = [
+        { title: "AI Resume Analyzer", domain: "Machine Learning", diff: "Intermediate" },
+        { title: "Blockchain Voting System", domain: "Blockchain", diff: "Advanced" },
+        { title: "IoT Smart Agriculture", domain: "IoT", diff: "Beginner" }
+    ];
+
     return (
         <div className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm animate-fade-in-up" style={{ animationDelay: '200ms' }}>
             <div className="flex items-center gap-2 mb-6">
@@ -106,7 +101,7 @@ export function SuggestionPanel() {
     );
 }
 
-export function RecentProjectsList() {
+export function RecentProjectsList({ projects }: { projects: any[] }) {
     return (
         <div className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm animate-fade-in-up" style={{ animationDelay: '150ms' }}>
             <div className="flex items-center justify-between mb-6">
@@ -119,34 +114,37 @@ export function RecentProjectsList() {
                 </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recentProjects.map((proj, i) => (
+                {(projects || []).slice(0, 2).map((proj, i) => (
                     <div key={i} className="bg-background border border-border/50 rounded-2xl p-5 hover:border-primary/30 transition-colors group">
                         <div className="flex justify-between items-start mb-4">
-                            <h4 className="font-bold text-foreground">{proj.name}</h4>
-                            <span className={cn(
-                                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
-                                proj.progress === 100 ? "bg-emerald-500/10 text-emerald-500" : "bg-blue-500/10 text-blue-500"
-                            )}>
-                                {proj.status}
+                            <h4 className="font-bold text-foreground line-clamp-1">{proj.title}</h4>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
+                                Ready
                             </span>
                         </div>
                         <div className="space-y-1">
                             <div className="flex justify-between text-xs text-muted-foreground font-medium mb-1">
-                                <span>Generation Progress</span>
-                                <span>{proj.progress}%</span>
+                                <span>Optimization</span>
+                                <span>100%</span>
                             </div>
                             <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                                 <div 
-                                    className={cn("h-full rounded-full transition-all duration-1000", proj.progress === 100 ? "bg-emerald-500" : "bg-primary")}
-                                    style={{ width: `${proj.progress}%` }}
+                                    className="h-full rounded-full bg-emerald-500 w-full"
                                 />
                             </div>
                         </div>
-                        <Button variant="outline" size="sm" className="w-full mt-5 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
-                            Open Project
-                        </Button>
+                        <Link href={`/dashboard/projects/${proj.id}`}>
+                            <Button variant="outline" size="sm" className="w-full mt-5 hover:bg-primary hover:text-white group-hover:border-primary transition-all">
+                                Open Workspace
+                            </Button>
+                        </Link>
                     </div>
                 ))}
+                {(!projects || projects.length === 0) && (
+                    <div className="col-span-2 py-10 text-center text-sm text-muted-foreground font-medium italic">
+                        No projects yet. Start by generating one!
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -154,16 +152,16 @@ export function RecentProjectsList() {
 
 export function ProjectProgressTracker() {
     const trackerStages = [
-        { name: "Report Generation", progress: 80, color: "bg-blue-500" },
-        { name: "Presentation Builder", progress: 60, color: "bg-purple-500" },
-        { name: "Code Packaging", progress: 100, color: "bg-emerald-500" },
+        { name: "Global Moderation", progress: 100, color: "bg-blue-500" },
+        { name: "Asset Optimization", progress: 95, color: "bg-purple-500" },
+        { name: "Live Sandbox", progress: 80, color: "bg-emerald-500" },
     ];
 
     return (
         <div className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm animate-fade-in-up" style={{ animationDelay: '250ms' }}>
             <div className="flex items-center gap-2 mb-6">
                 <Rocket className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-bold text-foreground tracking-tight">Generation Progress</h3>
+                <h3 className="text-lg font-bold text-foreground tracking-tight">Platform Vitals</h3>
             </div>
             <div className="space-y-6">
                 {trackerStages.map((stage, i) => (
@@ -174,7 +172,7 @@ export function ProjectProgressTracker() {
                         </div>
                         <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                             <div 
-                                className={cn("h-full rounded-full transition-all duration-1000 animate-pulse-glow", stage.color)}
+                                className={cn("h-full rounded-full transition-all duration-1000", stage.color)}
                                 style={{ width: `${stage.progress}%` }}
                             />
                         </div>

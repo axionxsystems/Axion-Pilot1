@@ -17,37 +17,53 @@ def generate_ppt(project_data):
     # Abstract Slide
     bullet_slide_layout = prs.slide_layouts[1]
     slide = prs.slides.add_slide(bullet_slide_layout)
-    shapes = slide.shapes
-    title_shape = shapes.title
-    body_shape = shapes.placeholders[1]
+    slide.shapes.title.text = "Abstract"
+    slide.placeholders[1].text_frame.text = project_data.get('abstract', '')[:1000]
     
-    title_shape.text = "Abstract"
-    tf = body_shape.text_frame
-    tf.text = project_data.get('abstract', '')[:500] + "..." # Truncate if too long
-    
+    # Literature Survey
+    if project_data.get('literature_survey'):
+        slide = prs.slides.add_slide(bullet_slide_layout)
+        slide.shapes.title.text = "2. Literature Survey"
+        slide.placeholders[1].text_frame.text = project_data.get('literature_survey', '')[:800]
+
     # Problem Statement
     slide = prs.slides.add_slide(bullet_slide_layout)
-    slide.shapes.title.text = "Problem Statement"
+    slide.shapes.title.text = "3. Problem Statement"
     slide.placeholders[1].text_frame.text = project_data.get('problem_statement', '')
     
+    # Key Features
+    if project_data.get('features'):
+        slide = prs.slides.add_slide(bullet_slide_layout)
+        slide.shapes.title.text = "4. Key Features"
+        tf = slide.placeholders[1].text_frame
+        for feature in project_data.get('features', []):
+            p = tf.add_paragraph()
+            p.text = feature
+
     # Architecture
     slide = prs.slides.add_slide(bullet_slide_layout)
-    slide.shapes.title.text = "System Architecture"
+    slide.shapes.title.text = "5. System Architecture"
     slide.placeholders[1].text_frame.text = project_data.get('architecture_description', '')
-
-    # Tech Stack
+    
+    # Technology Stack
     slide = prs.slides.add_slide(bullet_slide_layout)
-    slide.shapes.title.text = "Technology Stack"
+    slide.shapes.title.text = "6. Technology Stack"
     tf = slide.placeholders[1].text_frame
     tech = project_data.get('tech_stack_details', {})
     for k, v in tech.items():
         p = tf.add_paragraph()
         p.text = f"{k}: {v}"
 
+    # Methodology
+    if project_data.get('methodology'):
+        slide = prs.slides.add_slide(bullet_slide_layout)
+        slide.shapes.title.text = "7. Methodology"
+        slide.placeholders[1].text_frame.text = project_data.get('methodology', '')
+
     # Conclusion
     slide = prs.slides.add_slide(bullet_slide_layout)
-    slide.shapes.title.text = "Conclusion"
-    slide.placeholders[1].text_frame.text = "Thank You!"
+    slide.shapes.title.text = "8. Conclusion"
+    slide.placeholders[1].text_frame.text = "The system successfully implements the proposed architecture with advanced features and scalable design. Thank You!"
 
     buffer = io.BytesIO()
     prs.save(buffer)
