@@ -10,6 +10,10 @@ key.txt
 node_modules/
 **/node_modules/
 
+# Node modules (anywhere in the repo)
+node_modules/
+**/node_modules/
+
 # Frontend (Node/Next.js)
 frontend/.next/
 frontend/out/
