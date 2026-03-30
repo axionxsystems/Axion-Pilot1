@@ -113,23 +113,62 @@ export default function AdminDashboardPage() {
     const COLORS = ['#2563EB', '#7C3AED', '#22C55E', '#F59E0B', '#EF4444', '#06B6D4'];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-                        Platform Control Center
-                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-black uppercase tracking-widest rounded-full border border-primary/20">Admin</span>
-                    </h1>
-                    <p className="text-muted-foreground mt-2 font-medium">Real-time monitoring and global platform analytics.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="bg-card border border-border/50 rounded-2xl px-5 py-2.5 flex items-center gap-3 shadow-sm">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-xs font-bold text-foreground uppercase tracking-wider">System Live</span>
+        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+            {/* ── Command Center Header ─────────────────────────────────────── */}
+            <div className="relative rounded-[2rem] overflow-hidden border border-red-500/20 bg-gradient-to-br from-zinc-900/80 via-background to-red-950/20 p-8 md:p-10">
+                {/* Grid pattern overlay */}
+                <div className="absolute inset-0 opacity-5 pointer-events-none"
+                    style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+                {/* Red glow */}
+                <div className="absolute -top-10 -right-10 w-64 h-64 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-black uppercase tracking-[0.2em] mb-3 font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                            SUDO ACCESS — RESTRICTED
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground font-mono">
+                            Platform Control<br />
+                            <span className="text-red-400">Center</span>
+                        </h1>
+                        <p className="text-muted-foreground mt-2 text-sm font-medium font-mono">
+                            Logged in as <span className="text-red-400 font-bold">{user?.email}</span> · All actions are logged.
+                        </p>
+                    </div>
+
+                    {/* Status + Date */}
+                    <div className="flex flex-col items-end gap-3">
+                        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#4ade80]" />
+                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono">SYSTEM LIVE</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground font-mono text-right">
+                            <div className="font-bold text-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</div>
+                            <div>{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} IST</div>
+                        </div>
                     </div>
                 </div>
+
+                {/* KPI strip */}
+                <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+                    {[
+                        { label: "Total Users", value: stats?.total_users ?? "—", suffix: "accounts", color: "text-blue-400", border: "border-blue-500/20 bg-blue-500/5" },
+                        { label: "Projects", value: stats?.total_projects ?? "—", suffix: "generated", color: "text-violet-400", border: "border-violet-500/20 bg-violet-500/5" },
+                        { label: "Reports", value: stats?.total_reports ?? "—", suffix: "produced", color: "text-emerald-400", border: "border-emerald-500/20 bg-emerald-500/5" },
+                        { label: "PPTs", value: stats?.total_presentations ?? "—", suffix: "created", color: "text-amber-400", border: "border-amber-500/20 bg-amber-500/5" },
+                    ].map(k => (
+                        <div key={k.label} className={`rounded-2xl border ${k.border} px-4 py-3`}>
+                            <div className={`text-2xl font-black font-mono ${k.color}`}>{k.value}</div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">{k.label}</div>
+                            <div className="text-[10px] text-muted-foreground/50">{k.suffix}</div>
+                        </div>
+                    ))}
+                </div>
             </div>
+
             {/* Admin Navigation Hub */}
             <div className="flex flex-wrap items-center gap-1.5 p-1 bg-muted/40 border border-border/40 rounded-[1.25rem] w-fit">
                 {[
@@ -140,12 +179,12 @@ export default function AdminDashboardPage() {
                     { label: "Templates", href: "/dashboard/admin/templates" },
                     { label: "AI Config", href: "/dashboard/admin/settings" },
                 ].map((link) => (
-                    <button 
+                    <button
                         key={link.href}
                         onClick={() => window.location.href = link.href}
                         className={cn(
                             "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                            window.location.pathname === link.href ? "bg-card text-primary shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground"
+                            window.location.pathname === link.href ? "bg-card text-red-400 shadow-sm ring-1 ring-red-500/20" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
                         {link.label}
@@ -153,32 +192,6 @@ export default function AdminDashboardPage() {
                 ))}
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                    { label: "Total Users", val: stats?.total_users || 0, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-                    { label: "Projects Created", val: stats?.total_projects || 0, icon: Layers, color: "text-purple-500", bg: "bg-purple-500/10" },
-                    { label: "Reports Built", val: stats?.total_reports || 0, icon: FileText, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                    { label: "Presentations", val: stats?.total_presentations || 0, icon: Presentation, color: "text-amber-500", bg: "bg-amber-500/10" },
-                ].map((s, i) => (
-                    <div key={i} className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all group overflow-hidden relative">
-                        <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-10 blur-2xl group-hover:scale-150 transition-transform duration-700", s.bg)} />
-                        <div className="flex justify-between items-start relative z-10">
-                            <div className={cn("p-4 rounded-2xl", s.bg)}>
-                                <s.icon className={cn("w-6 h-6", s.color)} />
-                            </div>
-                            <span className="flex items-center text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">
-                                +12%
-                                <TrendingUp className="w-3 h-3 ml-1" />
-                            </span>
-                        </div>
-                        <div className="mt-6 relative z-10">
-                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{s.label}</h3>
-                            <p className="text-4xl font-black text-foreground mt-1 tabular-nums">{s.val.toLocaleString()}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

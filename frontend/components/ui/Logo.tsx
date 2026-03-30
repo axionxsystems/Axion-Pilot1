@@ -23,10 +23,10 @@ export function Logo({ className, variant = "default", href = "/", onClick }: Lo
                 src="/axionx-logo-icon.png" 
                 alt="AxionX System Icon" 
                 className={cn(
-                    "object-contain w-auto image-render-auto transition-transform duration-300", 
+                    "transition-all duration-300 object-contain w-auto", 
                     variant === "minimal" 
-                        ? "h-[40px] md:h-[50px] -ml-2" 
-                        : "h-[60px] md:h-[80px] -ml-4"
+                        ? "h-[32px] md:h-[40px] -ml-2" 
+                        : "h-[40px] md:h-[50px] -ml-2"
                 )}
             />
             <span className={cn(

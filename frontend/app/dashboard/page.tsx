@@ -39,25 +39,25 @@ export default function Dashboard() {
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border/40 pb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4">
                 <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-extrabold tracking-tight text-[#3ABFF8]">
                         Dashboard
                     </h1>
-                    <p className="text-muted-foreground mt-2 text-lg">
-                        Welcome back, <span className="text-foreground font-semibold">{user?.name || user?.email?.split('@')[0] || 'Creator'}</span>
+                    <p className="text-muted-foreground mt-2 text-sm font-medium">
+                        Welcome back, <span className="text-foreground">{user?.name?.split(" ")[0] || user?.email?.split('@')[0] || 'Creator'}</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Link href="/dashboard/projects">
-                        <button className="bg-background border border-border/50 text-foreground hover:bg-muted/50 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm">
+                        <button className="bg-card border border-border/50 text-foreground hover:bg-muted/50 px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm">
                             <Layers className="w-4 h-4" />
                             My Vault
                         </button>
                     </Link>
                     <button 
                         onClick={() => { setProject(null); window.scrollTo({ top: 800, behavior: 'smooth' }); }}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+                        className="bg-[#3ABFF8] text-[#0A0D14] hover:bg-[#3ABFF8]/90 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#3ABFF8]/20 hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Sparkles className="w-4 h-4" />
                         New Project
@@ -66,11 +66,11 @@ export default function Dashboard() {
             </div>
 
             {!project ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8 pb-12 text-sm">
-                    <div className="lg:col-span-8 space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 pb-12 text-sm">
+                    <div className="lg:col-span-8 space-y-6">
                         <StatsSection data={stats} />
                         
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <RecentProjectsList projects={recentProjects} />
                             <ProjectProgressTracker />
                         </div>
@@ -251,19 +251,19 @@ export default function Dashboard() {
                                         <DownloadButton
                                             label="Full Report"
                                             filename="project_report.docx"
-                                            onClick={() => api.downloadReport(project)}
+                                            onClick={() => api.downloadReport(project.id)}
                                             className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm transition-all hover:scale-[1.02]"
                                         />
                                         <DownloadButton
                                             label="PPT Presentation"
                                             filename="project_presentation.pptx"
-                                            onClick={() => api.downloadPPT(project)}
+                                            onClick={() => api.downloadPPT(project.id)}
                                             className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm transition-all hover:scale-[1.02]"
                                         />
                                         <DownloadButton
                                             label="Production Code"
                                             filename="project_code.zip"
-                                            onClick={() => api.downloadCode(project)}
+                                            onClick={() => api.downloadCode(project.id)}
                                             className="h-14 rounded-2xl font-bold bg-primary text-primary-foreground hover:opacity-90 border-none shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
                                         />
                                     </div>

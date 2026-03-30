@@ -86,9 +86,9 @@ export default function MyProjectsPage() {
                     <select 
                         value={domainFilter}
                         onChange={(e) => setDomainFilter(e.target.value)}
-                        className="bg-transparent text-xs font-bold uppercase tracking-widest outline-none py-1.5 cursor-pointer"
+                        className="bg-transparent text-foreground text-xs font-bold uppercase tracking-widest outline-none py-1.5 cursor-pointer"
                     >
-                        {domains.map(d => <option key={d} value={d}>{d}</option>)}
+                        {domains.map(d => <option key={d} value={d} className="bg-background text-foreground">{d}</option>)}
                     </select>
                 </div>
                 <div className="flex items-center gap-2 bg-card border border-border/50 rounded-xl p-1 px-3">
@@ -96,12 +96,12 @@ export default function MyProjectsPage() {
                     <select 
                         value={difficultyFilter}
                         onChange={(e) => setDifficultyFilter(e.target.value)}
-                        className="bg-transparent text-xs font-bold uppercase tracking-widest outline-none py-1.5 cursor-pointer"
+                        className="bg-transparent text-foreground text-xs font-bold uppercase tracking-widest outline-none py-1.5 cursor-pointer"
                     >
-                        <option value="All">All Levels</option>
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Advanced">Advanced</option>
+                        <option value="All" className="bg-background text-foreground">All Levels</option>
+                        <option value="Beginner" className="bg-background text-foreground">Beginner</option>
+                        <option value="Intermediate" className="bg-background text-foreground">Intermediate</option>
+                        <option value="Advanced" className="bg-background text-foreground">Advanced</option>
                     </select>
                 </div>
             </div>

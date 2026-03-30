@@ -280,7 +280,7 @@ export default function ProjectDetailsPage() {
                                         </h4>
                                         <div className="flex flex-wrap gap-2">
                                             {project.tech_stack?.split(',').map((tech: string, i: number) => (
-                                                <span key={i} className="px-4 py-2 bg-white text-xs font-bold rounded-xl border border-border/50 shadow-sm">{tech.trim()}</span>
+                                                <span key={i} className="px-4 py-2 bg-card text-foreground text-xs font-bold rounded-xl border border-border/50 shadow-sm">{tech.trim()}</span>
                                             ))}
                                         </div>
                                     </div>

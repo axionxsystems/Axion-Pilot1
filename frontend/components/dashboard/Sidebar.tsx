@@ -32,7 +32,7 @@ export function Sidebar({ className }: SidebarProps) {
     const links = [
         {
             name: "Dashboard",
-            href: user?.is_admin ? "/dashboard/admin" : "/dashboard",
+            href: "/dashboard",
             icon: LayoutDashboard
         },
         {
@@ -40,11 +40,13 @@ export function Sidebar({ className }: SidebarProps) {
             href: "/dashboard/projects",
             icon: Layers
         },
-        ...(user?.is_admin ? [{
-            name: "Admin Hub",
-            href: "/dashboard/admin",
-            icon: Shield
-        }] : []),
+        ...(user?.is_admin ? [
+            {
+                name: "Admin Hub",
+                href: "/dashboard/admin",
+                icon: Shield
+            }
+        ] : []),
         {
             name: "Profile",
             href: "/dashboard/profile",
@@ -76,7 +78,7 @@ export function Sidebar({ className }: SidebarProps) {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 rounded-full absolute -right-3 top-6 bg-background border shadow-sm z-50 text-muted-foreground hover:text-foreground"
+                    className="h-6 w-6 rounded-full absolute -right-3 top-20 bg-background border shadow-sm z-50 text-muted-foreground hover:text-foreground"
                     onClick={() => setCollapsed(!collapsed)}
                 >
                     <ChevronLeft className={cn("h-3 w-3 transition-transform", collapsed && "rotate-180")} />
@@ -85,7 +87,10 @@ export function Sidebar({ className }: SidebarProps) {
 
             <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-hide">
                 {links.map((link) => {
-                    const isActive = pathname === link.href;
+                    const isActive = link.href === "/dashboard" 
+                        ? pathname === "/dashboard"
+                        : pathname.startsWith(link.href);
+                        
                     return (
                         <Link
                             key={link.href}
@@ -95,12 +100,12 @@ export function Sidebar({ className }: SidebarProps) {
                                 className={cn(
                                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-1",
                                     isActive
-                                        ? "bg-primary/10 text-primary shadow-sm"
+                                        ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-primary/20 font-bold"
                                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                                     collapsed && "justify-center px-2"
                                 )}
                             >
-                                <link.icon className="h-5 w-5" />
+                                <link.icon className={cn("h-5 w-5", isActive && "text-primary")} />
                                 {!collapsed && <span>{link.name}</span>}
                             </span>
                         </Link>
