@@ -95,6 +95,30 @@ export default function ProjectEditorPage() {
         </div>
     );
 
+    const handleRegenerate = async () => {
+        const apiKey = prompt("Please enter your AI API Key to regenerate this project:");
+        if (!apiKey) return;
+        
+        setSaving(true);
+        setError("");
+        try {
+            const newData = await api.regenerateProject(project.id, apiKey);
+            setProject({...project, ...newData});
+            setTitle(newData.title || "");
+            setAbstract(newData.abstract || "");
+            setProblemStatement(newData.problem_statement || "");
+            setMethodology(newData.methodology || "");
+            setLiteratureSurvey(newData.literature_survey || "");
+            setArchDescription(newData.architecture_description || "");
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
             {/* Header */}
@@ -118,7 +142,7 @@ export default function ProjectEditorPage() {
                     )}
                     {saving && (
                         <span className="flex items-center gap-2 text-xs font-bold text-muted-foreground animate-pulse">
-                            <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                            <Loader2 className="w-4 h-4 animate-spin" /> Working...
                         </span>
                     )}
                     {error && (
@@ -126,6 +150,10 @@ export default function ProjectEditorPage() {
                             <AlertCircle className="w-4 h-4" /> {error}
                         </span>
                     )}
+                    <Button onClick={handleRegenerate} variant="ghost" className="rounded-xl font-bold px-4 text-primary bg-primary/5 hover:bg-primary/10">
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Re-cook AI
+                    </Button>
                     <Button onClick={saveProject} disabled={saving} className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20">
                         <Save className="w-4 h-4 mr-2" />
                         Save Now

@@ -7,9 +7,12 @@ import { api, User } from "../services/api";
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    signup: (email: string, password: string, full_name?: string, mobile?: string) => Promise<void>;
+    loginStep1: (email: string, password: string) => Promise<{ requires_otp: boolean }>;
+    loginStep2: (email: string, otp: string) => Promise<void>;
+    signup: (email: string, password: string, fullName: string, mobile: string) => Promise<void>;
+    verifySignup: (email: string, emailOtp: string, mobileOtp: string) => Promise<void>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as any);
@@ -19,57 +22,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
+    const refreshUser = async () => {
+        try {
+            const userData = await api.getMe();
+            setUser(userData);
+        } catch (e) {
+            logout();
+        }
+    };
+
     useEffect(() => {
         const initAuth = async () => {
             const token = localStorage.getItem("token");
             if (token) {
-                try {
-                    const userData = await api.getMe();
-                    setUser(userData);
-                } catch (e) {
-                    logout();
-                }
+                await refreshUser();
             }
             setLoading(false);
         };
         initAuth();
     }, []);
 
-    const login = async (email: string, password: string) => {
-        try {
-            const data = await api.login(email, password);
-            localStorage.setItem("token", data.access_token);
-            const userData = await api.getMe();
-            setUser(userData);
-            if (userData.is_admin) {
-                router.push("/dashboard/admin");
-            } else {
-                router.push("/dashboard");
-            }
-        } catch (error: any) {
-            console.error("Login failed:", error);
-            throw error;
-        }
+    const loginStep1 = async (email: string, password: string) => {
+        return await api.loginStep1(email, password);
     };
 
-    const signup = async (email: string, password: string, full_name?: string, mobile?: string) => {
-        try {
-            await api.signup(email, password, full_name, mobile);
-            await login(email, password);
-        } catch (error: any) {
-            console.error("Signup failed:", error);
-            throw error;
-        }
+    const loginStep2 = async (email: string, otp: string) => {
+        const data = await api.loginStep2(email, otp);
+        localStorage.setItem("token", data.access_token);
+        await refreshUser();
+        // Redirect will happen in the page component usually, but we check here too
+    };
+
+    const signup = async (email: string, password: string, fullName: string, mobile: string) => {
+        await api.signup(email, password, fullName, mobile);
+    };
+
+    const verifySignup = async (email: string, emailOtp: string, mobileOtp: string) => {
+        await api.verifySignup(email, emailOtp, mobileOtp);
     };
 
     const logout = () => {
         localStorage.removeItem("token");
         setUser(null);
-        router.push("/login"); // Redirect to login
+        router.push("/login");
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            loading, 
+            loginStep1, 
+            loginStep2, 
+            signup, 
+            verifySignup,
+            logout,
+            refreshUser
+        }}>
             {children}
         </AuthContext.Provider>
     );

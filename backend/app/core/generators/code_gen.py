@@ -46,5 +46,14 @@ def generate_full_zip(project_data):
             viva_text += f"Q: {v.get('question', '')}\nA: {v.get('answer', '')}\n\n"
         zip_file.writestr("Viva_Questions.txt", viva_text)
         
+        # Add General Documentation
+        doc_text = f"Project Summary: {project_data.get('title')}\n"
+        doc_text += f"Domain: {project_data.get('domain')}\n"
+        doc_text += f"Difficulty: {project_data.get('difficulty')}\n"
+        doc_text += f"Abstract:\n{project_data.get('abstract')}\n\n"
+        doc_text += f"Problem Statement:\n{project_data.get('problem_statement')}\n\n"
+        doc_text += f"Technology Stack:\n{project_data.get('tech_stack')}\n"
+        zip_file.writestr("Documentation.txt", doc_text)
+        
     zip_buffer.seek(0)
     return zip_buffer

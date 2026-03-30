@@ -45,4 +45,6 @@ class LLMClient:
             )
             return chat_completion.choices[0].message.content
         except Exception as e:
-            return f"Error generating content: {str(e)}"
+            # Raise RuntimeError so the multi-stage pipeline stops immediately
+            # and the API layer knows to return an error status (502).
+            raise RuntimeError(f"LLM Generation failed: {str(e)}")

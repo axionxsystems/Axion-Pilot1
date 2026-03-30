@@ -39,7 +39,7 @@ const Navbar = () => {
               <Rocket size={18} />
             </div>
             <span className="font-bold text-xl tracking-tight text-[#0F172A] dark:text-white">
-              ProjectPilot
+              AxionX
             </span>
           </Link>
 

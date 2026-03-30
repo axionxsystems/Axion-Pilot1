@@ -30,7 +30,7 @@ export function Logo({ className, variant = "default", href = "/", onClick }: Lo
                 )}
             />
             <span className={cn(
-                "font-black tracking-[0.2em] uppercase text-foreground transition-all duration-300 group-hover:tracking-[0.25em]",
+                "font-black tracking-[0.1em] uppercase text-foreground transition-all duration-300 group-hover:tracking-[0.15em]",
                 variant === "minimal" ? "text-sm -ml-1" : "text-lg -ml-2"
             )}>
                 AxionX

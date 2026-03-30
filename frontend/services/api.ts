@@ -1,5 +1,5 @@
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
 export interface User {
     id: number;
@@ -9,6 +9,7 @@ export interface User {
     created_at: string;
     is_admin: boolean;
     name?: string;
+    mobile?: string;
     avatar_url?: string;
 }
 
@@ -31,10 +32,12 @@ const authHeaders = () => ({
 })
 
 export const api = {
-    // Auth
-    login: async (username: string, password: string) => {
+    // ── Auth ────────────────────────────────────────────────────────────────
+
+    // Step 1: Submit email + password → triggers OTP to be sent
+    loginStep1: async (email: string, password: string) => {
         const formData = new URLSearchParams();
-        formData.append('username', username);
+        formData.append('username', email);
         formData.append('password', password);
 
         const res = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -45,6 +48,46 @@ export const api = {
         if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || 'Login failed');
+        }
+        return res.json(); // { requires_otp: true, message: "..." }
+    },
+
+    // Step 2: Submit OTP → receives JWT access token
+    loginStep2: async (email: string, otp: string) => {
+        const res = await fetch(`${API_BASE_URL}/auth/login/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp }),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'OTP verification failed');
+        }
+        return res.json(); // { access_token, token_type }
+    },
+
+    forgotPassword: async (email: string) => {
+        const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Request failed');
+        }
+        return res.json();
+    },
+
+    resetPassword: async (email: string, otp: string, new_password: string) => {
+        const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp, new_password }),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Password reset failed');
         }
         return res.json();
     },
@@ -58,6 +101,19 @@ export const api = {
         if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || 'Signup failed');
+        }
+        return res.json();
+    },
+
+    verifySignup: async (email: string, emailOtp: string, mobileOtp: string) => {
+        const res = await fetch(`${API_BASE_URL}/auth/verify-signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, email_otp: emailOtp, mobile_otp: mobileOtp }),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Verification failed');
         }
         return res.json();
     },
@@ -96,7 +152,7 @@ export const api = {
         return res.json();
     },
 
-    // Project
+    // ── Project ─────────────────────────────────────────────────────────────
     generateProject: async (data: ProjectRequest) => {
         const response = await fetch(`${API_BASE_URL}/projects/generate`, {
             method: "POST",
@@ -153,11 +209,11 @@ export const api = {
         return response.json();
     },
 
-    // Viva
+    // ── Viva ────────────────────────────────────────────────────────────────
     chatViva: async (apiKey: string, history: any[], projectData: any) => {
         const response = await fetch(`${API_BASE_URL}/viva/ask`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(), // Authentication REQUIRED now
             body: JSON.stringify({
                 api_key: apiKey,
                 messages: history,
@@ -168,48 +224,40 @@ export const api = {
         return response.json();
     },
 
-    // Downloads
-    downloadReport: async (projectData: any) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/report`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(projectData),
+    // ── Downloads ───────────────────────────────────────────────────────────
+    downloadReport: async (projectId: number) => {
+        const response = await fetch(`${API_BASE_URL}/projects/download/report/${projectId}`, {
+            headers: authHeaders(),
         });
         if (!response.ok) throw new Error("Report download failed");
         return response.blob();
     },
 
-    downloadPPT: async (projectData: any) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/ppt`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(projectData),
+    downloadPPT: async (projectId: number) => {
+        const response = await fetch(`${API_BASE_URL}/projects/download/ppt/${projectId}`, {
+            headers: authHeaders(),
         });
         if (!response.ok) throw new Error("PPT download failed");
         return response.blob();
     },
 
-    downloadCode: async (projectData: any) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/code`, {
-            method: "POST",
+    downloadCode: async (projectId: number) => {
+        const response = await fetch(`${API_BASE_URL}/projects/download/code/${projectId}`, {
             headers: authHeaders(),
-            body: JSON.stringify(projectData),
         });
         if (!response.ok) throw new Error("Failed to download code");
         return response.blob();
     },
 
-    downloadFullProject: async (projectData: any) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/full`, {
-            method: "POST",
+    downloadFullProject: async (projectId: number) => {
+        const response = await fetch(`${API_BASE_URL}/projects/download/full/${projectId}`, {
             headers: authHeaders(),
-            body: JSON.stringify(projectData),
         });
         if (!response.ok) throw new Error("Failed to download full project");
         return response.blob();
     },
 
-    // Admin Projects
+    // ── Admin ───────────────────────────────────────────────────────────────
     getAdminStats: async () => {
         const response = await fetch(`${API_BASE_URL}/admin/stats`, {
             headers: authHeaders(),
@@ -226,31 +274,6 @@ export const api = {
         return response.json();
     },
 
-    getAdminChartProjectsPerDay: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-day`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Chart failed");
-        return response.json();
-    },
-
-    getAdminChartProjectsPerDomain: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-domain`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Chart failed");
-        return response.json();
-    },
-
-    getAdminChartProjectsPerDifficulty: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-difficulty`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Chart failed");
-        return response.json();
-    },
-
-    // User Management
     adminListUsers: async () => {
         const response = await fetch(`${API_BASE_URL}/admin/users`, {
             headers: authHeaders(),
@@ -277,7 +300,6 @@ export const api = {
         return response.json();
     },
 
-    // Global Project Monitoring
     adminListAllProjects: async () => {
         const response = await fetch(`${API_BASE_URL}/admin/projects`, {
             headers: authHeaders(),
@@ -295,34 +317,6 @@ export const api = {
         return response.json();
     },
 
-    getPublicTemplates: async () => {
-        const response = await fetch(`${API_BASE_URL}/projects/templates`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch templates");
-        return response.json();
-    },
-
-    // AI Settings
-    getAdminAISettings: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/settings/ai`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch AI settings");
-        return response.json();
-    },
-
-    updateAdminAISettings: async (config: any) => {
-        const response = await fetch(`${API_BASE_URL}/admin/settings/ai`, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify(config),
-        });
-        if (!response.ok) throw new Error("Failed to update AI settings");
-        return response.json();
-    },
-
-    // Template Manager
     adminListTemplates: async () => {
         const response = await fetch(`${API_BASE_URL}/admin/templates`, {
             headers: authHeaders(),
@@ -350,22 +344,45 @@ export const api = {
         return response.json();
     },
 
-    // Moderation
-    getAdminModerationProjects: async (status: string = "active") => {
-        const response = await fetch(`${API_BASE_URL}/admin/moderation/projects?status=${status}`, {
+    getAdminAISettings: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/settings/ai`, {
             headers: authHeaders(),
         });
-        if (!response.ok) throw new Error("Failed to fetch flagged projects");
+        if (!response.ok) throw new Error("Failed to fetch AI settings");
         return response.json();
     },
 
-    updateAdminProjectStatus: async (projectId: number, status: string) => {
-        const response = await fetch(`${API_BASE_URL}/admin/moderation/projects/${projectId}/status`, {
+    updateAdminAISettings: async (config: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/settings/ai`, {
             method: "POST",
             headers: authHeaders(),
-            body: JSON.stringify({ status }),
+            body: JSON.stringify(config),
         });
-        if (!response.ok) throw new Error("Failed to update project status");
+        if (!response.ok) throw new Error("Failed to update AI settings");
         return response.json();
-    }
+    },
+
+    getAdminChartProjectsPerDay: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-day`, {
+            headers: authHeaders(),
+        });
+        if (!response.ok) throw new Error("Failed to fetch chart data");
+        return response.json();
+    },
+
+    getAdminChartProjectsPerDomain: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-domain`, {
+            headers: authHeaders(),
+        });
+        if (!response.ok) throw new Error("Failed to fetch domain chart data");
+        return response.json();
+    },
+
+    getAdminChartProjectsPerDifficulty: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-difficulty`, {
+            headers: authHeaders(),
+        });
+        if (!response.ok) throw new Error("Failed to fetch difficulty chart data");
+        return response.json();
+    },
 };

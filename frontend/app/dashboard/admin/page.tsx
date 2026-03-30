@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user && user.email !== "niyant214@gmail.com") {
+        if (user && !user.is_admin) {
             setError("Unauthorized access. Admin only.");
             setLoading(false);
             return;
@@ -64,7 +64,7 @@ export default function AdminDashboardPage() {
                 ]);
 
                 setStats(statsRes);
-                setActivity(activityRes);
+                setActivity(activityRes.items || activityRes || []);
                 setHistoryData(historyRes);
                 setDomainData(domainRes);
                 setDifficultyData(difficultyRes);

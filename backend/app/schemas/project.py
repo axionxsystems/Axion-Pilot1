@@ -1,14 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
 class ProjectRequest(BaseModel):
-    api_key: str
-    domain: str
-    topic: Optional[str] = "Random innovative topic"
-    description: Optional[str] = ""
-    difficulty: str
-    tech_stack: str
-    year: str
+    # api_key is accepted for frontend compatibility but IGNORED server-side.
+    # The server uses its own GROQ_API_KEY environment variable.
+    api_key: Optional[str] = Field(default=None, max_length=200)
+    domain: str = Field(..., min_length=2, max_length=100)
+    topic: Optional[str] = Field(default="Random innovative topic", max_length=200)
+    description: Optional[str] = Field(default="", max_length=1000)
+    difficulty: str = Field(..., min_length=2, max_length=50)
+    tech_stack: str = Field(..., min_length=2, max_length=200)
+    year: str = Field(..., min_length=1, max_length=20)
 
 class ProjectResponse(BaseModel):
     id: Optional[int] = None

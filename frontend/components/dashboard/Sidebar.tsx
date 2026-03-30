@@ -32,7 +32,7 @@ export function Sidebar({ className }: SidebarProps) {
     const links = [
         {
             name: "Dashboard",
-            href: "/dashboard",
+            href: user?.is_admin ? "/dashboard/admin" : "/dashboard",
             icon: LayoutDashboard
         },
         {
@@ -40,7 +40,7 @@ export function Sidebar({ className }: SidebarProps) {
             href: "/dashboard/projects",
             icon: Layers
         },
-        ...(user?.email === "niyant214@gmail.com" ? [{
+        ...(user?.is_admin ? [{
             name: "Admin Hub",
             href: "/dashboard/admin",
             icon: Shield

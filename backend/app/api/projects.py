@@ -14,17 +14,43 @@ from app.core.generators.ppt_gen import generate_ppt
 from app.core.generators.code_gen import generate_code_zip, generate_full_zip
 from app.models.settings import PlatformSettings, ProjectTemplate
 import io
+import logging
 from typing import List
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# --- CONFIG ---
+PLAN_LIMITS = {
+    "free": 3,
+    "pro": 50,
+    "enterprise": 9999
+}
+
+def _get_owned_project(db: Session, project_id: int, user_id: int) -> Project:
+    project = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found or access denied")
+    return project
 
 @router.post("/generate", response_model=ProjectResponse)
 def create_project(request: ProjectRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        # Fetch AI Config from admin settings
+        # 1. PLAN QUOTA ENFORCEMENT
+        limit = PLAN_LIMITS.get(current_user.plan.lower(), 3)
+        project_count = db.query(Project).filter(Project.user_id == current_user.id).count()
+        
+        if project_count >= limit:
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Plan limit reached ({limit} projects). Please upgrade to generate more."
+            )
+
+        # 2. AI CONFIG
         ai_config = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
         config_data = ai_config.setting_value if ai_config else None
         
+        # 3. GENERATION
         project_data = generate_project(
             api_key=request.api_key,
             domain=request.domain,
@@ -33,10 +59,10 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
             difficulty=request.difficulty,
             tech_stack=request.tech_stack,
             level=request.year,
-            ai_config=config_data # Pass the config
+            ai_config=config_data
         )
         
-        # Save to database
+        # 4. DB SAVE
         db_project = Project(
             user_id=current_user.id,
             title=project_data.get("title", "Untitled Project"),
@@ -49,11 +75,7 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
         db.commit()
         db.refresh(db_project)
         
-        # Add the DB ID to the response
-        project_data["id"] = db_project.id
-        project_data["created_at"] = db_project.created_at.isoformat()
-        
-        # Log Activity
+        # 5. ACTIVITY LOG
         log = Activity(
             user_id=current_user.id, 
             action_type="PROJECT_GEN", 
@@ -63,130 +85,96 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
         db.add(log)
         db.commit()
         
+        project_data["id"] = db_project.id
+        project_data["created_at"] = db_project.created_at.isoformat()
         return project_data
+
+    except RuntimeError as e:
+        # AI Pipeline failure (e.g. Groq timeout/error)
+        logger.error(f"AI Generation Pipeline failed: {str(e)}")
+        raise HTTPException(status_code=502, detail="AI generation failed. Please try again.")
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        if isinstance(e, HTTPException): raise e
+        logger.exception("Unexpected error in create_project")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/list", response_model=List[dict])
 async def get_projects(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    try:
-        # Exclude projects marked as deleted
-        projects = db.query(Project).filter(
-            Project.user_id == current_user.id,
-            Project.status != "deleted"
-        ).order_by(Project.created_at.desc()).all()
-        
-        result = []
-        for p in projects:
-            p_data = p.data if isinstance(p.data, dict) else {}
-            p_data["id"] = p.id
-            p_data["created_at"] = p.created_at.isoformat()
-            p_data["domain"] = p.domain
-            p_data["difficulty"] = p.difficulty
-            p_data["tech_stack"] = p.tech_stack
-            p_data["status"] = p.status # Let UI know if it's flagged/low quality
-            result.append(p_data)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Standard implementation... (Keeping as is but ensured verified)
+    projects = db.query(Project).filter(
+        Project.user_id == current_user.id,
+        Project.status != "deleted"
+    ).order_by(Project.created_at.desc()).all()
+    
+    result = []
+    for p in projects:
+        p_data = p.data if isinstance(p.data, dict) else {}
+        p_data["id"] = p.id
+        p_data["created_at"] = p.created_at.isoformat()
+        p_data["domain"] = p.domain
+        p_data["difficulty"] = p.difficulty
+        p_data["tech_stack"] = p.tech_stack
+        p_data["status"] = p.status
+        result.append(p_data)
+    return result
 
 @router.delete("/{project_id}")
 async def delete_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    try:
-        project = db.query(Project).filter(Project.id == project_id, Project.user_id == current_user.id).first()
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
-        db.delete(project)
-        db.commit()
-        return {"message": "Project deleted successfully"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    project = _get_owned_project(db, project_id, current_user.id)
+    db.delete(project)
+    db.commit()
+    return {"message": "Project deleted successfully"}
 
-@router.post("/download/report")
-async def download_report(project_data: dict, db: Session = Depends(get_db)):
-    try:
-        buffer = generate_report(project_data)
-        
-        # Log Activity
-        log = Activity(
-            action_type="REPORT_GEN", 
-            description=f"Report downloaded for project: {project_data.get('title')}"
-        )
-        db.add(log)
-        db.commit()
-        
-        return StreamingResponse(
-            buffer,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": "attachment; filename=project_report.docx"}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# --- SECURE DOWNLOAD ENDPOINTS ---
 
-@router.post("/download/ppt")
-async def download_ppt(project_data: dict, db: Session = Depends(get_db)):
-    try:
-        buffer = generate_ppt(project_data)
-        
-        # Log Activity
-        log = Activity(
-            action_type="PPT_GEN", 
-            description=f"Presentation downloaded for project: {project_data.get('title')}"
-        )
-        db.add(log)
-        db.commit()
-        
-        return StreamingResponse(
-            buffer,
-            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            headers={"Content-Disposition": "attachment; filename=project_presentation.pptx"}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/download/report/{project_id}")
+async def download_report(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    project = _get_owned_project(db, project_id, current_user.id)
+    buffer = generate_report(project.data)
+    
+    log = Activity(user_id=current_user.id, action_type="REPORT_GEN", description=f"Report downloaded: {project.title}")
+    db.add(log); db.commit()
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename=Report_{project_id}.docx"}
+    )
 
-@router.post("/download/code")
-async def download_code(project_data: dict, db: Session = Depends(get_db)):
-    try:
-        buffer = generate_code_zip(project_data)
-        
-        # Log Activity
-        log = Activity(
-            action_type="CODE_GEN", 
-            description=f"Code bundle downloaded for project: {project_data.get('title')}"
-        )
-        db.add(log)
-        db.commit()
-        
-        return StreamingResponse(
-            buffer,
-            media_type="application/zip",
-            headers={"Content-Disposition": "attachment; filename=project_code.zip"}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/download/ppt/{project_id}")
+async def download_ppt(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    project = _get_owned_project(db, project_id, current_user.id)
+    buffer = generate_ppt(project.data)
+    
+    log = Activity(user_id=current_user.id, action_type="PPT_GEN", description=f"PPT downloaded: {project.title}")
+    db.add(log); db.commit()
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={"Content-Disposition": f"attachment; filename=Presentation_{project_id}.pptx"}
+    )
 
-@router.post("/download/full")
-async def download_full_project(project_data: dict, db: Session = Depends(get_db)):
-    try:
-        buffer = generate_full_zip(project_data)
-        
-        # Log Activity
-        log = Activity(
-            action_type="CODE_GEN", 
-            description=f"Full project package exported: {project_data.get('title')}"
-        )
-        db.add(log)
-        db.commit()
-        
-        return StreamingResponse(
-            buffer,
-            media_type="application/zip",
-            headers={"Content-Disposition": "attachment; filename=full_project_suite.zip"}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get("/download/code/{project_id}")
+async def download_code(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    project = _get_owned_project(db, project_id, current_user.id)
+    buffer = generate_code_zip(project.data)
+    
+    log = Activity(user_id=current_user.id, action_type="CODE_GEN", description=f"Code zip downloaded: {project.title}")
+    db.add(log); db.commit()
+    
+    return StreamingResponse(buffer, media_type="application/zip", headers={"Content-Disposition": f"attachment; filename=Code_{project_id}.zip"})
+
+@router.get("/download/full/{project_id}")
+async def download_full_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    project = _get_owned_project(db, project_id, current_user.id)
+    buffer = generate_full_zip(project.data)
+    
+    log = Activity(user_id=current_user.id, action_type="CODE_GEN", description=f"Full package downloaded: {project.title}")
+    db.add(log); db.commit()
+    
+    return StreamingResponse(buffer, media_type="application/zip", headers={"Content-Disposition": f"attachment; filename=FullProject_{project_id}.zip"})
 
 @router.get("/templates")
 async def get_public_templates(db: Session = Depends(get_db)):
@@ -288,6 +276,42 @@ async def update_project(project_id: int, updates: dict, current_user: User = De
         db.commit()
         
         return {"message": "Project updated successfully"}
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/{project_id}/regenerate")
+async def regenerate_project(project_id: int, api_key: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        project = db.query(Project).filter(
+            Project.id == project_id,
+            Project.user_id == current_user.id
+        ).first()
+        
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+            
+        # Fetch AI Config from admin settings
+        ai_config = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
+        config_data = ai_config.setting_value if ai_config else None
+        
+        # Regenerate data using stored project metadata
+        new_data = generate_project(
+            api_key=api_key,
+            domain=project.domain,
+            topic=project.title,
+            description=project.data.get("abstract", ""),
+            difficulty=project.difficulty,
+            tech_stack=project.tech_stack,
+            level="Final Year", # Defaulting to final year or extracting from original
+            ai_config=config_data
+        )
+        
+        # Update project data
+        project.data = new_data
+        project.title = new_data.get("title", project.title)
+        db.commit()
+        
+        return new_data
     except Exception as e:
         if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=500, detail=str(e))

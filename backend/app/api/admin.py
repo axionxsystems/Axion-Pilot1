@@ -35,12 +35,25 @@ async def get_platform_stats(current_user: User = Depends(get_current_user), db:
         "total_presentations": total_presentations
     }
 
-@router.get("/activity", response_model=List[Dict])
-async def get_recent_activity(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@router.get("/activity", response_model=Dict)
+async def get_recent_activity(
+    page: int = 1, 
+    size: int = 50, 
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
     check_admin(current_user)
     
-    # Get last 50 actions with user details
-    logs = db.query(Activity, User.email).outerjoin(User, Activity.user_id == User.id).order_by(Activity.created_at.desc()).limit(50).all()
+    # Calculate offset
+    skip = (page - 1) * size
+    
+    total = db.query(Activity).count()
+    
+    # Get actions with user details
+    logs = db.query(Activity, User.email)\
+        .outerjoin(User, Activity.user_id == User.id)\
+        .order_by(Activity.created_at.desc())\
+        .offset(skip).limit(size).all()
     
     result = []
     for log, email in logs:
@@ -51,7 +64,14 @@ async def get_recent_activity(current_user: User = Depends(get_current_user), db
             "user_email": email or "System",
             "created_at": log.created_at.isoformat() if log.created_at else datetime.utcnow().isoformat()
         })
-    return result
+        
+    return {
+        "items": result,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": (total + size - 1) // size
+    }
 
 @router.get("/charts/projects-per-day")
 async def get_projects_per_day(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

@@ -62,7 +62,7 @@ export default function LandingPage() {
             Architect Systems. <br /> <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-400 drop-shadow-sm pb-2 inline-block">At the Speed of Thought.</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground opacity-80 max-w-[650px] font-medium leading-relaxed mb-10 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300 fill-mode-both">
-            Stop writing boilerplate. ProjectPilot by AxionX compiles full-stack production codebases, precise SRS documentation, and presentation decks in <span className="text-foreground font-bold border-b border-primary/50">under 60 seconds</span>.
+            Stop writing boilerplate. AxionX compiles full-stack production codebases, precise SRS documentation, and presentation decks in <span className="text-foreground font-bold border-b border-primary/50">under 60 seconds</span>.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-500 fill-mode-both">
             <Link 
