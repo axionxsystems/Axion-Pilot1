@@ -3,12 +3,6 @@
 *.pem
 .idea/
 .vscode/
-key.txt
-*.key
-
-# Node modules (anywhere in the repo)
-node_modules/
-**/node_modules/
 
 # Node modules (anywhere in the repo)
 node_modules/
