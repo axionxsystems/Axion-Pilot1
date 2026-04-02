@@ -385,4 +385,22 @@ export const api = {
         if (!response.ok) throw new Error("Failed to fetch difficulty chart data");
         return response.json();
     },
+
+    getAdminModerationProjects: async (status: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/moderation?status=${status}`, {
+            headers: authHeaders(),
+        });
+        if (!response.ok) throw new Error("Failed to fetch moderation projects");
+        return response.json();
+    },
+
+    updateAdminProjectStatus: async (projectId: number, status: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/projects/${projectId}/status`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) throw new Error("Failed to update project status");
+        return response.json();
+    },
 };

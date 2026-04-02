@@ -55,7 +55,7 @@ export default function Dashboard() {
                             My Vault
                         </button>
                     </Link>
-                    <button 
+                    <button
                         onClick={() => { setProject(null); window.scrollTo({ top: 800, behavior: 'smooth' }); }}
                         className="bg-[#3ABFF8] text-[#0A0D14] hover:bg-[#3ABFF8]/90 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#3ABFF8]/20 hover:scale-[1.02] active:scale-[0.98]"
                     >
@@ -69,7 +69,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 pb-12 text-sm">
                     <div className="lg:col-span-8 space-y-6">
                         <StatsSection data={stats} />
-                        
+
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <RecentProjectsList projects={recentProjects} />
                             <ProjectProgressTracker />
@@ -83,7 +83,7 @@ export default function Dashboard() {
                                 </div>
                                 <h2 className="text-3xl font-black text-foreground">Ready to Build Something Big?</h2>
                                 <p className="text-muted-foreground font-medium max-w-sm">Use our advanced AI engine to turn your project ideas into production-ready assets in seconds.</p>
-                                <button 
+                                <button
                                     onClick={() => document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth' })}
                                     className="px-8 py-3 bg-primary text-primary-foreground font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all"
                                 >
@@ -108,11 +108,11 @@ export default function Dashboard() {
                 <div className="lg:col-span-12 max-w-5xl mx-auto w-full">
                     <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-700">
                         <div className="flex items-center justify-between">
-                            <button 
+                            <button
                                 onClick={() => setProject(null)}
                                 className="group text-sm font-bold text-muted-foreground hover:text-primary flex items-center gap-2 transition-all"
                             >
-                                <span className="group-hover:-translate-x-1 transition-transform">←</span> 
+                                <span className="group-hover:-translate-x-1 transition-transform">←</span>
                                 Back to Dashboard
                             </button>
                             <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">
@@ -125,7 +125,7 @@ export default function Dashboard() {
                             <div className="p-8 md:p-12 border-b bg-muted/20 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
                                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full -ml-32 -mb-32 blur-3xl" />
-                                
+
                                 <div className="relative z-10">
                                     <div className="flex justify-between items-start mb-6">
                                         <h2 className="text-4xl md:text-5xl font-black leading-tight tracking-tight text-foreground max-w-3xl">

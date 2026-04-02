@@ -21,6 +21,20 @@ export default function LoginPage() {
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [resendTimer, setResendTimer] = useState(0);
+
+    const startResendTimer = () => {
+        setResendTimer(60);
+        const timer = setInterval(() => {
+            setResendTimer((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
 
     // Initial Login Step
     const handleStep1 = async (e: React.FormEvent) => {
@@ -59,6 +73,26 @@ export default function LoginPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleResendOtp = async () => {
+        if (resendTimer > 0) return;
+        setError("");
+        setLoading(true);
+        try {
+            await loginStep1(email, password);
+            startResendTimer();
+        } catch (err: any) {
+            setError("Failed to resend code.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleBackToLogin = () => {
+        setIsOtpStep(false);
+        setOtp("");
+        setError("");
     };
 
     return (
@@ -164,24 +198,37 @@ export default function LoginPage() {
                                 <p className="text-[10px] text-muted-foreground text-center mt-2">The code expires in 5 minutes.</p>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full group relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground shadow-lg"
-                            >
-                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>
-                                    <span className="font-semibold">Verify & Continue</span>
-                                    <ShieldCheck className="w-5 h-5" />
-                                </>}
-                            </button>
-                            
-                            <button 
-                                type="button" 
-                                onClick={() => setIsOtpStep(false)}
-                                className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                Back to login
-                            </button>
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full group relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all font-semibold"
+                                >
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>
+                                        <span>Verify & Continue</span>
+                                        <ShieldCheck className="w-5 h-5" />
+                                    </>}
+                                </button>
+
+                                <div className="flex items-center justify-between px-1">
+                                    <button
+                                        type="button"
+                                        disabled={resendTimer > 0 || loading}
+                                        onClick={handleResendOtp}
+                                        className="text-xs text-primary hover:underline underline-offset-4 disabled:text-muted-foreground disabled:no-underline transition-all"
+                                    >
+                                        {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend Code"}
+                                    </button>
+                                    
+                                    <button 
+                                        type="button" 
+                                        onClick={handleBackToLogin}
+                                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        Back to login
+                                    </button>
+                                </div>
+                            </div>
                         </form>
                     )}
 

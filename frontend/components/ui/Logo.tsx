@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -19,9 +20,11 @@ export function Logo({ className, variant = "default", href = "/", onClick }: Lo
                 className
             )}
         >
-            <img 
+            <Image 
                 src="/axionx-logo-icon.png" 
                 alt="AxionX System Icon" 
+                width={50}
+                height={50}
                 className={cn(
                     "transition-all duration-300 object-contain w-auto", 
                     variant === "minimal" 

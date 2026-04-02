@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+gunicorn
 python-multipart
 pydantic
 python-dotenv
@@ -11,6 +12,10 @@ pandas
 fpdf
 watchdog
 sqlalchemy
+psycopg2-binary
+alembic
+slowapi
 passlib[bcrypt]
 python-jose[cryptography]
 email-validator
+httpx

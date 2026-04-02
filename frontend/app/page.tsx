@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Terminal,
   Cpu,
@@ -52,9 +53,11 @@ export default function LandingPage() {
                 </span>
                 AxionX Generation Engine v2.0
              </div>
-             <img 
+             <Image 
                src="/axionx-logo-icon.png" 
                alt="AxionX System Icon" 
+               width={110}
+               height={110}
                className="h-[80px] md:h-[110px] w-auto object-contain select-none image-render-auto opacity-100 drop-shadow-[0_0_20px_rgba(59,130,246,0.15)]"
              />
           </div>

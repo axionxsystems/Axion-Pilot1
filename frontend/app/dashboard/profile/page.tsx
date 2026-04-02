@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/services/api";
 
 export default function ProfilePage() {
-    const { user, login } = useAuth(); // Assuming login logic is just restoring context if needed, but we'll use API.
+    const { user } = useAuth(); // Assuming login logic is just restoring context if needed, but we'll use API.
     const [stats, setStats] = useState<any>(null);
     
     // Modals

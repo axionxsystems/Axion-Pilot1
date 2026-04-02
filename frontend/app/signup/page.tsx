@@ -97,6 +97,20 @@ export default function SignupPage() {
     const [mobileOtp, setMobileOtp] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [resendTimer, setResendTimer] = useState(0);
+
+    const startResendTimer = () => {
+        setResendTimer(60);
+        const timer = setInterval(() => {
+            setResendTimer((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
 
     const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setFields(f => ({ ...f, [key]: e.target.value }));
@@ -139,6 +153,24 @@ export default function SignupPage() {
         } catch (err: any) {
             setError(err.message || "Verification failed. Check your codes.");
         } finally { setLoading(false); }
+    };
+
+    const handleResendOtp = async () => {
+        if (resendTimer > 0) return;
+        setError(""); setLoading(true);
+        try {
+            await signup(fields.email, fields.password, fields.name, fields.mobile);
+            startResendTimer();
+        } catch (err: any) {
+            setError("Failed to resend codes.");
+        } finally { setLoading(false); }
+    };
+
+    const handleBackToForm = () => {
+        setOtpStep(false);
+        setError("");
+        setEmailOtp("");
+        setMobileOtp("");
     };
 
     return (
@@ -195,16 +227,34 @@ export default function SignupPage() {
                                     />
                                 </div>
                                 <p className="text-[11px] text-muted-foreground text-center">Both codes expire in 5 minutes.</p>
-                                <button
-                                    type="submit"
-                                    disabled={loading || emailOtp.length < 6 || mobileOtp.length < 6}
-                                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-4 h-4" /><span>Verify & Activate Account</span></>}
-                                </button>
-                                <button type="button" onClick={() => { setOtpStep(false); setError(""); }} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
-                                    ← Back to form
-                                </button>
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        type="submit"
+                                        disabled={loading || emailOtp.length < 6 || mobileOtp.length < 6}
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-4 h-4" /><span>Verify & Activate Account</span></>}
+                                    </button>
+
+                                    <div className="flex items-center justify-between px-1">
+                                        <button
+                                            type="button"
+                                            disabled={resendTimer > 0 || loading}
+                                            onClick={handleResendOtp}
+                                            className="text-xs text-primary hover:underline underline-offset-4 disabled:text-muted-foreground disabled:no-underline transition-all"
+                                        >
+                                            {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend Code"}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleBackToForm}
+                                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                        >
+                                            ← Back to form
+                                        </button>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     ) : (
