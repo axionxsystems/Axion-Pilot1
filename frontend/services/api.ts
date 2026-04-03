@@ -15,6 +15,7 @@ export interface User {
 
 export interface ProjectRequest {
     api_key: string;
+    ai_provider?: string;
     domain: string;
     topic?: string;
     description?: string;
@@ -148,6 +149,30 @@ export const api = {
         if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || 'Profile update failed');
+        }
+        return res.json();
+    },
+
+    logoutAllDevices: async () => {
+        const res = await fetch(`${API_BASE_URL}/users/me/logout-all`, {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Logout from all devices failed');
+        }
+        return res.json();
+    },
+
+    deleteAccount: async () => {
+        const res = await fetch(`${API_BASE_URL}/users/me`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Account deletion failed');
         }
         return res.json();
     },
@@ -401,6 +426,56 @@ export const api = {
             body: JSON.stringify({ status }),
         });
         if (!response.ok) throw new Error("Failed to update project status");
+        return response.json();
+    },
+
+    getPublicTemplates: async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/templates/public`, {
+                headers: authHeaders(),
+            });
+            if (!response.ok) return [];
+            return response.json();
+        } catch {
+            return [];
+        }
+    },
+
+    // ── Admin Infrastructure ────────────────────────────────────────────────
+    getInfrastructureStatus: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/infrastructure/status`, {
+            headers: authHeaders(),
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || "Failed to fetch infrastructure status");
+        }
+        return response.json();
+    },
+
+    updateInfrastructureConfig: async (serviceId: string, config: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/infrastructure/config`, {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({ service_id: serviceId, config }),
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || "Failed to update configuration");
+        }
+        return response.json();
+    },
+
+    rotateServiceKeys: async (serviceId: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/infrastructure/rotate`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ service_id: serviceId }),
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || "Rotation failed");
+        }
         return response.json();
     },
 };

@@ -53,6 +53,7 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
         # 3. GENERATION
         project_data = generate_project(
             api_key=request.api_key,
+            provider=request.ai_provider,
             domain=request.domain,
             topic=request.topic,
             description=request.description,
@@ -90,9 +91,9 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
         return project_data
 
     except RuntimeError as e:
-        # AI Pipeline failure (e.g. Groq timeout/error)
+        # AI Pipeline failure (e.g. Groq timeout/error, Invalid API Key)
         logger.error(f"AI Generation Pipeline failed: {str(e)}")
-        raise HTTPException(status_code=502, detail="AI generation failed. Please try again.")
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
         db.rollback()
         if isinstance(e, HTTPException): raise e

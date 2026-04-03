@@ -10,8 +10,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    full_name: constr(min_length=2, max_length=50) # Strict validation
-    mobile: constr(pattern=r"^\d{10}$") # Valid 10-digit mobile
+    full_name: constr(min_length=2, max_length=50)
+    mobile: Optional[str] = None  # Mobile is now optional
 
     @field_validator("password")
     @classmethod
@@ -25,8 +25,7 @@ class UserCreate(UserBase):
 # ── 2FA & Verification Flows ──────────────────────────────────────────────────
 
 class SignupVerify(UserBase):
-    email_otp: str
-    mobile_otp: str
+    email_otp: str  # Only email OTP needed now
 
 class LoginPending(BaseModel):
     message: str
@@ -87,4 +86,4 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
-    v: Optional[int] = 1 # token version
+    v: Optional[int] = 1  # token version

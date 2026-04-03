@@ -10,7 +10,7 @@ class Mailer:
     def __init__(self):
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 587
-        self.sender_name = "AxionX"
+        self.sender_name = "Axion Pilot" # Updated from AxionX for consistency
 
     @property
     def email_user(self) -> str:
@@ -22,7 +22,7 @@ class Mailer:
         return os.environ.get("EMAIL_PASS") or ""
 
     def send_otp(self, recipient_email: str, otp: str, purpose: str = "login"):
-        """Sends an OTP email via Gmail SMTP."""
+        """Sends an OTP email via Gmail SMTP with enhanced connectivity."""
         if not self.email_user or not self.email_pass or "your_sender" in self.email_user:
             logger.warning(f"SMTP credentials not configured. OTP for {recipient_email} is: {otp}")
             print(f"[DEV-DEBUG] OTP for {recipient_email} ({purpose}): {otp}")
@@ -59,7 +59,9 @@ class Mailer:
             msg.attach(MIMEText(body, "html"))
 
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.ehlo()
                 server.starttls()
+                server.ehlo()
                 server.login(self.email_user, self.email_pass)
                 server.send_message(msg)
 
@@ -82,7 +84,7 @@ class Mailer:
             
             body = f"""
             <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333 text-align: center;">
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; text-align: center;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; text-align: left;">
                     <h2 style="color: #4F46E5; text-align: center;">Welcome to {self.sender_name}!</h2>
                     <p>To complete your registration, please enter the following verification codes in the app:</p>
@@ -114,7 +116,9 @@ class Mailer:
             msg.attach(MIMEText(body, "html"))
 
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.ehlo()
                 server.starttls()
+                server.ehlo()
                 server.login(self.email_user, self.email_pass)
                 server.send_message(msg)
 

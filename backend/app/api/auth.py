@@ -34,7 +34,7 @@ router = APIRouter()
 # ── Config ────────────────────────────────────────────────────────────────────
 SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "").strip().lower()
 OTP_MAX_ATTEMPTS = 5
-OTP_EXPIRY_MINUTES = 5
+OTP_EXPIRY_MINUTES = 10   # increased to 10 min so it doesn't expire too fast
 OTP_RESEND_COOLDOWN_SECONDS = 60
 
 
@@ -56,9 +56,9 @@ def _is_gmail(email: str) -> bool:
 # ── Signup ────────────────────────────────────────────────────────────────────
 
 @router.post("/signup")
-@limiter.limit("2/minute")
+@limiter.limit("5/minute")
 def signup_request(request: Request, background_tasks: BackgroundTasks, user: UserCreate, db: Session = Depends(get_db)):
-    """Initiate signup — sends hashed OTPs for email and phone verification."""
+    """Initiate signup — sends email OTP for verification."""
     email = _normalize_email(user.email)
     if not _is_gmail(email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only Gmail accounts are allowed.")
@@ -66,7 +66,7 @@ def signup_request(request: Request, background_tasks: BackgroundTasks, user: Us
     # [Privacy] Generic response to prevent user enumeration
     db_user = db.query(User).filter(User.email == email).first()
     if db_user:
-        return {"message": "If this email is not yet registered, OTPs have been sent."}
+        return {"message": "If this email is not yet registered, an OTP has been sent."}
 
     # Resend cooldown logic
     pending = db.query(SignupVerification).filter(SignupVerification.email == email).first()
@@ -74,156 +74,238 @@ def signup_request(request: Request, background_tasks: BackgroundTasks, user: Us
         elapsed = (datetime.utcnow() - pending.created_at).total_seconds()
         if elapsed < OTP_RESEND_COOLDOWN_SECONDS:
             wait = int(OTP_RESEND_COOLDOWN_SECONDS - elapsed)
-            raise HTTPException(status_code=429, detail=f"Wait {wait}sec before requesting a new OTP.")
+            raise HTTPException(status_code=429, detail=f"Wait {wait}s before requesting a new OTP.")
 
     email_otp = _generate_otp()
-    mobile_otp = _generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)
     hashed_password = get_password_hash(user.password)
 
     if pending:
-        pending.name, pending.mobile, pending.hashed_password = user.full_name, user.mobile, hashed_password
-        pending.email_otp_hash, pending.mobile_otp_hash = _hash_otp(email_otp), _hash_otp(mobile_otp)
-        pending.expires_at, pending.created_at, pending.attempt_count = expires_at, datetime.utcnow(), 0
+        pending.name = user.full_name
+        pending.mobile = user.mobile
+        pending.hashed_password = hashed_password
+        pending.email_otp_hash = _hash_otp(email_otp)
+        pending.mobile_otp_hash = "bypass"  # no longer used
+        pending.expires_at = expires_at
+        pending.created_at = datetime.utcnow()
+        pending.attempt_count = 0
     else:
         pending = SignupVerification(
-            email=email, mobile=user.mobile, name=user.full_name,
-            hashed_password=hashed_password, email_otp_hash=_hash_otp(email_otp),
-            mobile_otp_hash=_hash_otp(mobile_otp), expires_at=expires_at,
+            email=email,
+            mobile=user.mobile or "",
+            name=user.full_name,
+            hashed_password=hashed_password,
+            email_otp_hash=_hash_otp(email_otp),
+            mobile_otp_hash="bypass",  # no longer used
+            expires_at=expires_at,
         )
         db.add(pending)
 
     db.commit()
-    print(f"[DEV] Signup OTPs for {email} → Email: {email_otp} | Mobile: {mobile_otp}")
-    # Send both OTPs in one email in background
-    background_tasks.add_task(mailer.send_signup_otps, email, email_otp, mobile_otp)
-    return {"message": "Verification codes sent to Gmail and mobile."}
+    logger.info(f"[SIGNUP] OTP generated for {email}: {email_otp}")
+    print(f"[DEV] Signup OTP for {email}: {email_otp}")
+
+    # Send email OTP in background
+    background_tasks.add_task(mailer.send_otp, email, email_otp, "Signup Verification")
+    msg = "Verification code sent to your Gmail."
+    if os.environ.get("ENV") == "development":
+        msg = f"[DEV] Code sent to {email}. (DEBUG: {email_otp})"
+    return {"message": msg}
 
 
 @router.post("/verify-signup", response_model=UserResponse)
-@limiter.limit("3/minute")
+@limiter.limit("10/minute")
 def verify_signup(request: Request, data: SignupVerify, db: Session = Depends(get_db)):
-    """Finish signup — validates hashed OTPs and creates User in DB."""
+    """Finish signup — validates email OTP and creates User in DB."""
     email = _normalize_email(data.email)
     pending = db.query(SignupVerification).filter(SignupVerification.email == email).first()
 
     if not pending or (datetime.utcnow() > pending.expires_at):
-        if pending: db.delete(pending); db.commit()
-        raise HTTPException(status_code=400, detail="Registration session expired.")
+        if pending:
+            db.delete(pending)
+            db.commit()
+        raise HTTPException(status_code=400, detail="Registration session expired. Please sign up again.")
 
     if pending.attempt_count >= OTP_MAX_ATTEMPTS:
-        db.delete(pending); db.commit()
-        raise HTTPException(status_code=429, detail="Too many failed attempts. Restart signup.")
+        db.delete(pending)
+        db.commit()
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Please restart signup.")
 
-    # Check OTP hashes
-    if pending.email_otp_hash != _hash_otp(data.email_otp) or pending.mobile_otp_hash != _hash_otp(data.mobile_otp):
+    # Check email OTP hash only
+    if pending.email_otp_hash != _hash_otp(data.email_otp):
         pending.attempt_count += 1
         db.commit()
-        raise HTTPException(status_code=400, detail="Incorrect OTP(s).")
+        remaining = OTP_MAX_ATTEMPTS - pending.attempt_count
+        raise HTTPException(status_code=400, detail=f"Incorrect OTP. {remaining} attempts remaining.")
 
     # Is super-admin check (normalized)
     is_admin = bool(SUPER_ADMIN_EMAIL and email == SUPER_ADMIN_EMAIL)
-    new_user = User(email=email, name=pending.name, mobile=pending.mobile, 
-                    hashed_password=pending.hashed_password, is_admin=is_admin)
+    new_user = User(
+        email=email,
+        name=pending.name,
+        mobile=pending.mobile if pending.mobile else None,
+        hashed_password=pending.hashed_password,
+        is_admin=is_admin,
+    )
     db.add(new_user)
     db.delete(pending)
     db.flush()
     db.add(Activity(user_id=new_user.id, action_type="USER_REG", description=f"Registered: {email}"))
     db.commit()
+    logger.info(f"[SIGNUP] New user created: {email}")
     return new_user
 
 
 # ── Login Flow (Step 1 & Step 2 for MFA) ──────────────────────────────────────
 
 @router.post("/login", response_model=LoginPending)
-@limiter.limit("5/minute")
+@limiter.limit("10/minute")
 def login_step1(request: Request, background_tasks: BackgroundTasks, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Password Check → Generates Hashed OTP for 2FA."""
     email = _normalize_email(form_data.username)
     user = db.query(User).filter(User.email == email).first()
 
-    # Timing-safe failure (always verify password even if user missing)
+    # Timing-safe failure
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect credentials")
+        raise HTTPException(status_code=401, detail="Incorrect email or password.")
 
     if not user.is_active:
-        raise HTTPException(status_code=403, detail="Account suspended.")
+        raise HTTPException(status_code=403, detail="Account suspended. Contact support.")
 
-    otp = _generate_otp(); expires_at = datetime.utcnow() + timedelta(minutes=5)
+    otp = _generate_otp()
+    expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)
     existing = db.query(LoginVerification).filter(LoginVerification.user_id == user.id).first()
     if existing:
-        existing.otp_hash, existing.expires_at, existing.created_at, existing.attempt_count = _hash_otp(otp), expires_at, datetime.utcnow(), 0
+        existing.otp_hash = _hash_otp(otp)
+        existing.expires_at = expires_at
+        existing.created_at = datetime.utcnow()
+        existing.attempt_count = 0
     else:
         db.add(LoginVerification(user_id=user.id, otp_hash=_hash_otp(otp), expires_at=expires_at))
 
     db.commit()
+    logger.info(f"[LOGIN] OTP generated for {email}: {otp}")
     print(f"[DEV] Login OTP for {email}: {otp}")
+
     # Send OTP email in background so login response is instant
     background_tasks.add_task(mailer.send_otp, email, otp, "Login")
     return LoginPending(message="2FA code sent to your email.")
 
 
 @router.post("/login/verify-otp", response_model=Token)
-@limiter.limit("5/minute")
+@limiter.limit("10/minute")
 def login_step2(request: Request, data: LoginOTPVerify, db: Session = Depends(get_db)):
     """Final Authentication — consumes OTP hash and issues JWT."""
     email = _normalize_email(data.email)
     user = db.query(User).filter(User.email == email).first()
-    if not user or not user.is_active: raise HTTPException(status_code=401, detail="Invalid session.")
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Invalid session.")
 
     v = db.query(LoginVerification).filter(LoginVerification.user_id == user.id).first()
-    if not v or (datetime.utcnow() > v.expires_at) or (v.attempt_count >= OTP_MAX_ATTEMPTS):
-        if v: db.delete(v); db.commit()
-        raise HTTPException(status_code=400, detail="OTP session invalid.")
+    if not v or (datetime.utcnow() > v.expires_at):
+        if v:
+            db.delete(v)
+            db.commit()
+        raise HTTPException(status_code=400, detail="OTP expired. Please log in again to get a new code.")
+
+    if v.attempt_count >= OTP_MAX_ATTEMPTS:
+        db.delete(v)
+        db.commit()
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Please log in again.")
 
     if v.otp_hash != _hash_otp(data.otp):
-        v.attempt_count += 1; db.commit()
-        raise HTTPException(status_code=400, detail="Invalid code.")
+        v.attempt_count += 1
+        db.commit()
+        remaining = OTP_MAX_ATTEMPTS - v.attempt_count
+        raise HTTPException(status_code=400, detail=f"Invalid code. {remaining} attempts remaining.")
 
-    db.delete(v); db.commit()
+    db.delete(v)
+    db.commit()
     access_token = create_access_token(data={"sub": user.email, "v": user.token_version})
+    logger.info(f"[LOGIN] Successful login for {email}")
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 # ── Forgot Password ───────────────────────────────────────────────────────────
 
 @router.post("/forgot-password")
-@limiter.limit("2/minute")
+@limiter.limit("5/minute")
 def forgot_password(request: Request, background_tasks: BackgroundTasks, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Send a password reset OTP to the registered email."""
     email = _normalize_email(data.email)
-    user = db.query(User).filter(User.email == email).first()
-    if user and user.is_active:
-        otp = _generate_otp(); expires_at = datetime.utcnow() + timedelta(minutes=5)
-        v = db.query(ForgotPasswordVerification).filter(ForgotPasswordVerification.user_id == user.id).first()
-        if v: v.otp_hash, v.expires_at, v.created_at, v.attempt_count = _hash_otp(otp), expires_at, datetime.utcnow(), 0
-        else: db.add(ForgotPasswordVerification(user_id=user.id, otp_hash=_hash_otp(otp), expires_at=expires_at))
-        db.commit()
-        print(f"[DEV] Password-reset OTP for {email}: {otp}")
-        # Send reset OTP email in background
-        background_tasks.add_task(mailer.send_otp, email, otp, "Password Reset")
+    logger.info(f"[FORGOT-PWD] Request for: {email}")
 
-    return {"message": "Success. Check your email for reset instructions."}
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        logger.warning(f"[FORGOT-PWD] No account found for: {email}")
+    elif not user.is_active:
+        logger.warning(f"[FORGOT-PWD] Account inactive: {email}")
+    else:
+        otp = _generate_otp()
+        expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)
+
+        v = db.query(ForgotPasswordVerification).filter(ForgotPasswordVerification.user_id == user.id).first()
+        if v:
+            v.otp_hash = _hash_otp(otp)
+            v.expires_at = expires_at
+            v.created_at = datetime.utcnow()
+            v.attempt_count = 0
+        else:
+            db.add(ForgotPasswordVerification(
+                user_id=user.id,
+                otp_hash=_hash_otp(otp),
+                expires_at=expires_at,
+            ))
+
+        db.commit()
+        logger.info(f"[FORGOT-PWD] OTP generated for {email}: {otp}")
+        print(f"[DEV] Password-reset OTP for {email}: {otp}")
+
+        # Send reset OTP email (temporarily sync for debugging)
+        success = mailer.send_otp(email, otp, "Password Reset")
+        if not success:
+            logger.error(f"Synchronous email delivery failed for {email}")
+
+    msg = "If an account with that email exists, a reset code has been sent."
+    if os.environ.get("ENV") == "development" and user and user.is_active:
+        msg = f"[DEV] Code sent to {email}. (DEBUG: {otp})"
+    return {"message": msg}
 
 
 @router.post("/reset-password")
-@limiter.limit("3/minute")
+@limiter.limit("5/minute")
 def reset_password(request: Request, data: ForgotPasswordReset, db: Session = Depends(get_db)):
+    """Verify OTP and update password."""
     email = _normalize_email(data.email)
     user = db.query(User).filter(User.email == email).first()
-    if not user or not user.is_active: raise HTTPException(status_code=400, detail="Invalid.")
+    if not user or not user.is_active:
+        raise HTTPException(status_code=400, detail="Invalid request.")
 
     v = db.query(ForgotPasswordVerification).filter(ForgotPasswordVerification.user_id == user.id).first()
     if not v or datetime.utcnow() > v.expires_at:
-        if v: db.delete(v); db.commit()
+        if v:
+            db.delete(v)
+            db.commit()
         raise HTTPException(status_code=400, detail="Reset code expired. Please request a new one.")
-    if v.otp_hash != _hash_otp(data.otp):
-        v.attempt_count += 1; db.commit()
-        raise HTTPException(status_code=400, detail="Code invalid.")
 
-    # REVOCATION: increment token_version to boot all existing login session tokens instantly
-    user.hashed_password, user.token_version = get_password_hash(data.new_password), user.token_version + 1
+    if v.attempt_count >= OTP_MAX_ATTEMPTS:
+        db.delete(v)
+        db.commit()
+        raise HTTPException(status_code=429, detail="Too many attempts. Please request a new reset code.")
+
+    if v.otp_hash != _hash_otp(data.otp):
+        v.attempt_count += 1
+        db.commit()
+        remaining = OTP_MAX_ATTEMPTS - v.attempt_count
+        raise HTTPException(status_code=400, detail=f"Invalid code. {remaining} attempts remaining.")
+
+    # REVOCATION: increment token_version to invalidate all existing sessions instantly
+    user.hashed_password = get_password_hash(data.new_password)
+    user.token_version = user.token_version + 1
     db.query(LoginVerification).filter(LoginVerification.user_id == user.id).delete()
     db.delete(v)
-    db.add(Activity(user_id=user.id, action_type="PWD_RESET", description="Resetted password via OTP"))
+    db.add(Activity(user_id=user.id, action_type="PWD_RESET", description="Password reset via OTP"))
     db.commit()
-    return {"message": "Password updated successfully."}
+    logger.info(f"[RESET-PWD] Password updated for {email}")
+    return {"message": "Password updated successfully. Please log in with your new password."}

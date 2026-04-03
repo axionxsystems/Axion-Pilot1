@@ -1,11 +1,11 @@
 from .llm_client import LLMClient
 from ..prompts.system_prompts import VIVA_ASSISTANT_SYSTEM_PROMPT
 
-def get_viva_response(api_key, history, project_data):
+def get_viva_response(api_key, provider, history, project_data):
     """
     Generates a response for the viva assistant based on chat history and project context.
     """
-    client = LLMClient(api_key=api_key)
+    client = LLMClient(api_key=api_key, provider=provider)
     
     # Construct context from project data
     context = ""

@@ -15,6 +15,7 @@ async def chat_viva(
     try:
         response_text = get_viva_response(
             api_key=request.api_key,
+            provider=request.ai_provider,
             history=request.messages,
             project_data=request.project_data
         )

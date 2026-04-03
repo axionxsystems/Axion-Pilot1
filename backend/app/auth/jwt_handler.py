@@ -15,7 +15,7 @@ if not SECRET_KEY or len(SECRET_KEY) < 32:
     )
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

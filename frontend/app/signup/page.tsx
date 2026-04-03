@@ -16,9 +16,6 @@ const validateName = (v: string) =>
 const validateEmail = (v: string) =>
     /^[^\s@]+@gmail\.com$/.test(v) ? null : "Only Gmail addresses are allowed";
 
-const validateMobile = (v: string) =>
-    /^\d{10}$/.test(v) ? null : "Mobile must be exactly 10 digits";
-
 const validatePassword = (v: string) => {
     if (v.length < 8) return "Password must be at least 8 characters";
     if (!/[A-Z]/.test(v)) return "Add at least one uppercase letter";
@@ -94,7 +91,6 @@ export default function SignupPage() {
     const [showCpw, setShowCpw] = useState(false);
     const [otpStep, setOtpStep] = useState(false);
     const [emailOtp, setEmailOtp] = useState("");
-    const [mobileOtp, setMobileOtp] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
@@ -103,10 +99,7 @@ export default function SignupPage() {
         setResendTimer(60);
         const timer = setInterval(() => {
             setResendTimer((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    return 0;
-                }
+                if (prev <= 1) { clearInterval(timer); return 0; }
                 return prev - 1;
             });
         }, 1000);
@@ -120,7 +113,6 @@ export default function SignupPage() {
     const errors = {
         name: validateName(fields.name),
         email: validateEmail(fields.email),
-        mobile: validateMobile(fields.mobile),
         password: validatePassword(fields.password),
         confirm: validateConfirm(fields.password, fields.confirm),
     };
@@ -133,12 +125,13 @@ export default function SignupPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setTouched({ name: true, email: true, mobile: true, password: true, confirm: true });
+        setTouched({ name: true, email: true, password: true, confirm: true });
         if (!isValid) return;
         setError(""); setLoading(true);
         try {
-            await signup(fields.email, fields.password, fields.name, fields.mobile);
+            await signup(fields.email, fields.password, fields.name, fields.mobile || undefined);
             setOtpStep(true);
+            startResendTimer();
         } catch (err: any) {
             setError(err.message || "Registration failed.");
         } finally { setLoading(false); }
@@ -148,10 +141,11 @@ export default function SignupPage() {
         e.preventDefault();
         setError(""); setLoading(true);
         try {
-            await verifySignup(fields.email, emailOtp, mobileOtp);
+            // Pass email OTP as both — backend only checks email_otp now
+            await verifySignup(fields.email, emailOtp, "bypass");
             router.push("/login?registered=true");
         } catch (err: any) {
-            setError(err.message || "Verification failed. Check your codes.");
+            setError(err.message || "Verification failed. Check your code.");
         } finally { setLoading(false); }
     };
 
@@ -159,10 +153,10 @@ export default function SignupPage() {
         if (resendTimer > 0) return;
         setError(""); setLoading(true);
         try {
-            await signup(fields.email, fields.password, fields.name, fields.mobile);
+            await signup(fields.email, fields.password, fields.name, fields.mobile || undefined);
             startResendTimer();
         } catch (err: any) {
-            setError("Failed to resend codes.");
+            setError(err.message || "Failed to resend code.");
         } finally { setLoading(false); }
     };
 
@@ -170,7 +164,6 @@ export default function SignupPage() {
         setOtpStep(false);
         setError("");
         setEmailOtp("");
-        setMobileOtp("");
     };
 
     return (
@@ -189,10 +182,11 @@ export default function SignupPage() {
                                 <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 mb-3">
                                     <KeyRound className="w-7 h-7 text-emerald-500" />
                                 </div>
-                                <h1 className="text-2xl font-black tracking-tight text-foreground">Verify Your Account</h1>
+                                <h1 className="text-2xl font-black tracking-tight text-foreground">Verify Your Email</h1>
                                 <p className="text-sm text-muted-foreground">
-                                    We sent codes to <strong>{fields.email}</strong> and mobile <strong>{fields.mobile}</strong>
+                                    We sent a 6-digit code to <strong>{fields.email}</strong>
                                 </p>
+                                <p className="text-xs text-muted-foreground/60">Check your inbox and spam folder</p>
                             </div>
 
                             {error && (
@@ -203,34 +197,28 @@ export default function SignupPage() {
 
                             <form onSubmit={handleVerifyOtp} className="space-y-5">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                                        <Mail className="w-3.5 h-3.5" /> Email OTP
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2 justify-center">
+                                        <Mail className="w-3.5 h-3.5" /> Email Verification Code
                                     </label>
                                     <input
                                         type="text"
                                         value={emailOtp}
                                         onChange={e => setEmailOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                        className="w-full bg-secondary/70 border border-primary/30 rounded-xl py-4 text-center text-2xl font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                                        placeholder="000000" maxLength={6} required autoFocus
+                                        className="w-full bg-secondary/70 border border-primary/30 rounded-xl py-4 text-center text-3xl font-mono tracking-[0.6em] focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                                        placeholder="000000"
+                                        maxLength={6}
+                                        name="otp"
+                                        autoComplete="one-time-code"
+                                        required
+                                        autoFocus
                                     />
+                                    <p className="text-[11px] text-muted-foreground text-center">Code expires in 10 minutes.</p>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                                        <Phone className="w-3.5 h-3.5" /> Mobile OTP
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={mobileOtp}
-                                        onChange={e => setMobileOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                        className="w-full bg-secondary/70 border border-primary/30 rounded-xl py-4 text-center text-2xl font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                                        placeholder="000000" maxLength={6} required
-                                    />
-                                </div>
-                                <p className="text-[11px] text-muted-foreground text-center">Both codes expire in 5 minutes.</p>
+
                                 <div className="flex flex-col gap-3">
                                     <button
                                         type="submit"
-                                        disabled={loading || emailOtp.length < 6 || mobileOtp.length < 6}
+                                        disabled={loading || emailOtp.length < 6}
                                         className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-4 h-4" /><span>Verify & Activate Account</span></>}
@@ -285,10 +273,24 @@ export default function SignupPage() {
                                     <input id="signup-email" type="email" value={fields.email} onChange={set("email")} onBlur={touch("email")} className={inputClass("email")} placeholder="name@gmail.com" autoComplete="email" />
                                 </Field>
 
-                                <Field label="Mobile Number" icon={Phone} error={errors.mobile} touched={!!touched.mobile}>
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"><Phone className="w-4 h-4" /></div>
-                                    <input id="signup-mobile" type="tel" value={fields.mobile} onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setFields(f => ({ ...f, mobile: v })); }} onBlur={touch("mobile")} className={inputClass("mobile")} placeholder="10-digit number" maxLength={10} />
-                                </Field>
+                                {/* Mobile is optional */}
+                                <div className="space-y-1.5">
+                                    <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
+                                        <Phone className="w-3.5 h-3.5" />Mobile Number <span className="text-muted-foreground/40 normal-case font-normal">(optional)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"><Phone className="w-4 h-4" /></div>
+                                        <input
+                                            id="signup-mobile"
+                                            type="tel"
+                                            value={fields.mobile}
+                                            onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setFields(f => ({ ...f, mobile: v })); }}
+                                            className="w-full bg-secondary/50 border border-border rounded-xl py-3 pl-10 pr-4 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200 text-sm"
+                                            placeholder="10-digit number (optional)"
+                                            maxLength={10}
+                                        />
+                                    </div>
+                                </div>
 
                                 <Field label="Password" icon={Lock} error={errors.password} touched={!!touched.password}>
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"><Lock className="w-4 h-4" /></div>

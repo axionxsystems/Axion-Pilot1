@@ -50,3 +50,23 @@ def update_password(
     current_user.token_version += 1
     db.commit()
     return {"message": "Password updated. Other active sessions revoked."}
+
+@router.post("/me/logout-all")
+def logout_from_all_devices(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Invalidate all active sessions for the current user."""
+    current_user.token_version += 1
+    db.commit()
+    return {"message": "Successfully logged out from all devices."}
+
+@router.delete("/me")
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Permanently delete the user account."""
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Account deleted successfully."}

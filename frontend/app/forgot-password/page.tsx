@@ -120,6 +120,8 @@ export default function ForgotPasswordPage() {
                                     className="w-full bg-secondary/70 border border-primary/30 rounded-xl py-3 text-center text-xl font-mono tracking-[0.5em] focus:outline-none transition-all"
                                     placeholder="000000"
                                     maxLength={6}
+                                    name="otp"
+                                    autoComplete="one-time-code"
                                     required
                                     autoFocus
                                 />

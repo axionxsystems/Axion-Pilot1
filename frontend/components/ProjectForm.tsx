@@ -146,26 +146,55 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                 </header>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* API Key */}
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center ml-1">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                Groq API Key (Optional)
+                    {/* Provider & API Key */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2 md:col-span-1">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">
+                                AI Engine
                             </label>
-                            <span className="text-[10px] text-primary/60 font-medium">Uses system default if empty</span>
-                        </div>
-                        <div className="relative group">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                <Code2 className="w-4 h-4" />
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                    <Sparkles className="w-4 h-4" />
+                                </div>
+                                <select
+                                    name="ai_provider"
+                                    value={formData.ai_provider || "groq"}
+                                    onChange={handleChange}
+                                    className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 appearance-none cursor-pointer hover:bg-muted/30 transition-colors font-medium"
+                                >
+                                    <option value="groq">Groq (Default)</option>
+                                    <option value="openai">OpenAI (ChatGPT)</option>
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="xai">xAI (Grok)</option>
+                                    <option value="gemini">Google Gemini</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
                             </div>
-                            <input
-                                type="password"
-                                name="api_key"
-                                value={formData.api_key}
-                                onChange={handleChange}
-                                className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200"
-                                placeholder="gsk_..."
-                            />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                            <div className="flex justify-between items-center ml-1">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                    API Key (Optional)
+                                </label>
+                                <span className="text-[10px] text-primary/60 font-medium">Uses system default if empty</span>
+                            </div>
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                    <Code2 className="w-4 h-4" />
+                                </div>
+                                <input
+                                    type="password"
+                                    name="auth_key"
+                                    autoComplete="off"
+                                    value={formData.api_key}
+                                    onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+                                    className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 font-mono"
+                                    placeholder={`Enter ${formData.ai_provider === 'openai' ? 'sk-...' : formData.ai_provider === 'anthropic' ? 'sk-ant-...' : formData.ai_provider === 'gemini' ? 'AIza...' : 'gsk_...'} key`}
+                                />
+                            </div>
                         </div>
                     </div>
 

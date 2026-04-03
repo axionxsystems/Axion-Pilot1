@@ -9,8 +9,8 @@ interface AuthContextType {
     loading: boolean;
     loginStep1: (email: string, password: string) => Promise<{ requires_otp: boolean }>;
     loginStep2: (email: string, otp: string) => Promise<void>;
-    signup: (email: string, password: string, fullName: string, mobile: string) => Promise<void>;
-    verifySignup: (email: string, emailOtp: string, mobileOtp: string) => Promise<void>;
+    signup: (email: string, password: string, fullName: string, mobile?: string) => Promise<void>;
+    verifySignup: (email: string, emailOtp: string, mobileOtp?: string) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
 }
@@ -50,15 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await api.loginStep2(email, otp);
         localStorage.setItem("token", data.access_token);
         await refreshUser();
-        // Redirect will happen in the page component usually, but we check here too
     };
 
-    const signup = async (email: string, password: string, fullName: string, mobile: string) => {
+    const signup = async (email: string, password: string, fullName: string, mobile?: string) => {
         await api.signup(email, password, fullName, mobile);
     };
 
-    const verifySignup = async (email: string, emailOtp: string, mobileOtp: string) => {
-        await api.verifySignup(email, emailOtp, mobileOtp);
+    // mobileOtp is now optional / ignored by the backend — email OTP only
+    const verifySignup = async (email: string, emailOtp: string, mobileOtp?: string) => {
+        await api.verifySignup(email, emailOtp, mobileOtp || "bypass");
     };
 
     const logout = () => {

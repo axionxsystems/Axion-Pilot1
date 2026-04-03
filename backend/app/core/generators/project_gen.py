@@ -33,8 +33,8 @@ def extract_json(text):
         print(f"JSON Parse Error: {e}")
         return None
 
-def generate_project(api_key, domain, topic, description, difficulty, tech_stack, level, ai_config=None):
-    client = LLMClient(api_key=api_key)
+def generate_project(api_key, provider, domain, topic, description, difficulty, tech_stack, level, ai_config=None):
+    client = LLMClient(api_key=api_key, provider=provider)
     
     # Extract AI Config
     config = ai_config or {}

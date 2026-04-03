@@ -1,16 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from datetime import datetime, timedelta
+from typing import List, Dict
+
 from app.database import get_db
 from app.models.user import User
 from app.models.project import Project
 from app.models.activity import Activity
 from app.models.settings import PlatformSettings, ProjectTemplate
 from app.auth.dependencies import get_current_user
-from datetime import datetime, timedelta
-from typing import List, Dict
 
-router = APIRouter()
+router = APIRouter(tags=["Admin Dashboard"])
 
 def check_admin(user: User):
     is_super_admin = user.email.lower() == "niyant214@gmail.com"
@@ -24,7 +25,6 @@ async def get_platform_stats(current_user: User = Depends(get_current_user), db:
     total_users = db.query(User).count()
     total_projects = db.query(Project).count()
     
-    # Count generated assets from activity logs
     total_reports = db.query(Activity).filter(Activity.action_type == "REPORT_GEN").count()
     total_presentations = db.query(Activity).filter(Activity.action_type == "PPT_GEN").count()
     
@@ -43,13 +43,9 @@ async def get_recent_activity(
     db: Session = Depends(get_db)
 ):
     check_admin(current_user)
-    
-    # Calculate offset
     skip = (page - 1) * size
-    
     total = db.query(Activity).count()
     
-    # Get actions with user details
     logs = db.query(Activity, User.email)\
         .outerjoin(User, Activity.user_id == User.id)\
         .order_by(Activity.created_at.desc())\
@@ -76,46 +72,34 @@ async def get_recent_activity(
 @router.get("/charts/projects-per-day")
 async def get_projects_per_day(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
-    
-    # Group projects by date for the last 14 days
     fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
-    
     stats = db.query(
         func.date(Project.created_at).label('date'),
         func.count(Project.id).label('count')
     ).filter(Project.created_at >= fourteen_days_ago).group_by(func.date(Project.created_at)).all()
-    
     return [{"date": str(s.date), "count": s.count} for s in stats]
 
 @router.get("/charts/projects-per-domain")
 async def get_projects_per_domain(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
-    
     domain_stats = db.query(
         Project.domain,
         func.count(Project.id).label('count')
     ).group_by(Project.domain).all()
-    
     return [{"domain": s.domain, "count": s.count} for s in domain_stats]
 
 @router.get("/charts/projects-per-difficulty")
 async def get_projects_per_difficulty(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
-    
     diff_stats = db.query(
         Project.difficulty,
         func.count(Project.id).label('count')
     ).group_by(Project.difficulty).all()
-    
     return [{"difficulty": s.difficulty, "count": s.count} for s in diff_stats]
-
-# --- NEW USER MANAGEMENT ENDPOINTS ---
 
 @router.get("/users", response_model=List[Dict])
 async def list_users(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
-    
-    # Get all users with project counts
     users = db.query(
         User,
         func.count(Project.id).label("project_count")
@@ -134,14 +118,11 @@ async def list_users(current_user: User = Depends(get_current_user), db: Session
 @router.post("/users/{user_id}/toggle-status")
 async def toggle_user_status(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
-    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
     if user.email == "niyant214@gmail.com":
         raise HTTPException(status_code=400, detail="Cannot suspend the super-admin")
-        
     user.is_active = not user.is_active
     db.commit()
     return {"message": f"User status updated to {'active' if user.is_active else 'suspended'}"}
@@ -149,25 +130,18 @@ async def toggle_user_status(user_id: int, current_user: User = Depends(get_curr
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
-    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     if user.email == "niyant214@gmail.com":
         raise HTTPException(status_code=400, detail="Cannot delete the super-admin")
-
     db.delete(user)
     db.commit()
     return {"message": "User deleted successfully"}
 
-# --- NEW PROJECT MONITORING ENDPOINTS ---
-
 @router.get("/projects", response_model=List[Dict])
-async def list_all_projects(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_all_projects(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) :
     check_admin(current_user)
-    
-    # Join with User to show owner email
     projects = db.query(
         Project,
         User.email.label("user_email")
@@ -187,50 +161,12 @@ async def list_all_projects(current_user: User = Depends(get_current_user), db: 
 @router.delete("/projects/{project_id}")
 async def admin_delete_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
-    
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-        
     db.delete(project)
     db.commit()
     return {"message": "Project deleted successfully"}
-
-# --- AI SETTINGS ENDPOINTS ---
-
-@router.get("/settings/ai")
-async def get_ai_settings(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    settings = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
-    if not settings:
-        # Default settings if none exist
-        return {
-            "model": "gemini-1.5-flash",
-            "temperature": 0.7,
-            "max_tokens": 4096,
-            "complexity_level": "standard",
-            "features": {
-                "advanced_mode": True,
-                "deep_code": True,
-                "extended_docs": True,
-                "arch_planning": True
-            }
-        }
-    return settings.setting_value
-
-@router.post("/settings/ai")
-async def update_ai_settings(config: Dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    settings = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
-    if not settings:
-        settings = PlatformSettings(setting_key="AI_CONFIG", setting_value=config)
-        db.add(settings)
-    else:
-        settings.setting_value = config
-    db.commit()
-    return {"message": "AI configuration updated successfully"}
-
-# --- TEMPLATE MANAGEMENT ENDPOINTS ---
 
 @router.get("/templates")
 async def list_templates(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -262,8 +198,6 @@ async def delete_template(template_id: int, current_user: User = Depends(get_cur
     db.commit()
     return {"message": "Template deleted successfully"}
 
-# --- MODERATION SYSTEM ENDPOINTS ---
-
 @router.get("/moderation/projects")
 async def get_moderation_projects(status: str = "active", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_admin(current_user)
@@ -288,11 +222,9 @@ async def update_project_status(project_id: int, status_data: Dict, current_user
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    
     new_status = status_data.get("status")
     if new_status not in ["active", "flagged", "low_quality", "approved"]:
         raise HTTPException(status_code=400, detail="Invalid status")
-        
     project.status = new_status
     db.commit()
     return {"message": f"Project status updated to {new_status}"}
