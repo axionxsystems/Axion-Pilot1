@@ -8,12 +8,24 @@ class Project(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    title = Column(String)
-    domain = Column(String)
-    difficulty = Column(String)
+    topic = Column(String)
     tech_stack = Column(String)
-    data = Column(JSON) # Stores the full project_data dictionary
+    complexity = Column(String)
     status = Column(String, default="active") # active, flagged, low_quality, deleted
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Relationships
     owner = relationship("User", back_populates="projects")
+    contents = relationship("ProjectContent", back_populates="project", cascade="all, delete-orphan")
+
+class ProjectContent(Base):
+    __tablename__ = "project_contents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"))
+    type = Column(String) # idea, architecture, modules, code, report, presentation, viva
+    content = Column(JSON) # JSON content or text
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    project = relationship("Project", back_populates="contents")

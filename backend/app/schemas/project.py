@@ -41,6 +41,39 @@ class VivaRequest(BaseModel):
     messages: List[Dict[str, str]]
     project_data: Dict[str, Any]
 
-class VivaResponse(BaseModel):
-    response: str
+class ProjectGenerateRequest(BaseModel):
+    topic: str
+    techStack: str = Field(..., alias="techStack")
+    complexity: str
+
+    class Config:
+        populate_by_name = True
+
+class ProjectFullResponse(BaseModel):
+    id: int
+    userId: int = Field(..., alias="user_id")
+    topic: str
+    techStack: str = Field(..., alias="tech_stack")
+    complexity: str
+    createdAt: Any = Field(..., alias="created_at")
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class ProjectContentResponse(BaseModel):
+    projectId: int = Field(..., alias="project_id")
+    type: str
+    content: Any
+    
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class ProjectGenerationResponse(BaseModel):
+    project: ProjectFullResponse
+    contents: List[ProjectContentResponse]
+
+    class Config:
+        populate_by_name = True
 
