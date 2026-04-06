@@ -6,12 +6,22 @@ from app.core.generators.ppt_gen import generate_ppt
 
 def generate_code_zip(project_data):
     files = project_data.get('files', [])
+    if isinstance(files, dict):
+        files = [files]
     zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for file in files:
-            filename = file.get('filename', 'unknown.txt')
-            content = file.get('content', '')
-            zip_file.writestr(filename, content)
+    try:
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            if isinstance(files, list):
+                for file in files:
+                    if not isinstance(file, dict):
+                        continue
+                    filename = str(file.get('filename', 'unknown.txt'))
+                    content = file.get('content', '')
+                    if not isinstance(content, (str, bytes)):
+                        content = json.dumps(content, indent=2)
+                    zip_file.writestr(filename, content)
+    except Exception as e:
+        print(f"Error zipping code: {e}")
     zip_buffer.seek(0)
     return zip_buffer
 
@@ -20,10 +30,17 @@ def generate_full_zip(project_data):
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         # Add Code Files
         files = project_data.get('files', [])
-        for file in files:
-            filename = file.get('filename', 'unknown.txt')
-            content = file.get('content', '')
-            zip_file.writestr(f"code/{filename}", content)
+        if isinstance(files, dict):
+            files = [files]
+        if isinstance(files, list):
+            for file in files:
+                if not isinstance(file, dict):
+                    continue
+                filename = str(file.get('filename', 'unknown.txt'))
+                content = file.get('content', '')
+                if not isinstance(content, (str, bytes)):
+                    content = json.dumps(content, indent=2)
+                zip_file.writestr(f"code/{filename}", content)
             
         # Add Report
         try:

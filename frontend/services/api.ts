@@ -1,5 +1,5 @@
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 export interface User {
     id: number;
@@ -250,32 +250,36 @@ export const api = {
     },
 
     // ── Downloads ───────────────────────────────────────────────────────────
-    downloadReport: async (projectId: number) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/report/${projectId}`, {
+    downloadReport: async (projectId: number | string) => {
+        const id = typeof projectId === 'object' ? (projectId as any).id : projectId;
+        const response = await fetch(`${API_BASE_URL}/projects/download/report/${id}`, {
             headers: authHeaders(),
         });
         if (!response.ok) throw new Error("Report download failed");
         return response.blob();
     },
 
-    downloadPPT: async (projectId: number) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/ppt/${projectId}`, {
+    downloadPPT: async (projectId: number | string) => {
+        const id = typeof projectId === 'object' ? (projectId as any).id : projectId;
+        const response = await fetch(`${API_BASE_URL}/projects/download/ppt/${id}`, {
             headers: authHeaders(),
         });
         if (!response.ok) throw new Error("PPT download failed");
         return response.blob();
     },
 
-    downloadCode: async (projectId: number) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/code/${projectId}`, {
+    downloadCode: async (projectId: number | string) => {
+        const id = typeof projectId === 'object' ? (projectId as any).id : projectId;
+        const response = await fetch(`${API_BASE_URL}/projects/download/code/${id}`, {
             headers: authHeaders(),
         });
         if (!response.ok) throw new Error("Failed to download code");
         return response.blob();
     },
 
-    downloadFullProject: async (projectId: number) => {
-        const response = await fetch(`${API_BASE_URL}/projects/download/full/${projectId}`, {
+    downloadFullProject: async (projectId: number | string) => {
+        const id = typeof projectId === 'object' ? (projectId as any).id : projectId;
+        const response = await fetch(`${API_BASE_URL}/projects/download/full/${id}`, {
             headers: authHeaders(),
         });
         if (!response.ok) throw new Error("Failed to download full project");

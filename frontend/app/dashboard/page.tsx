@@ -424,13 +424,13 @@ export default function Dashboard() {
                                             label="Full Report"
                                             filename="project_report.docx"
                                             onClick={() => api.downloadReport(project.id)}
-                                            className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm transition-all hover:scale-[1.02]"
+                                            className="h-14 rounded-2xl font-bold bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-sm transition-all hover:scale-[1.02]"
                                         />
                                         <DownloadButton
                                             label="PPT Presentation"
                                             filename="project_presentation.pptx"
                                             onClick={() => api.downloadPPT(project.id)}
-                                            className="h-14 rounded-2xl font-bold bg-white hover:bg-muted text-foreground border-border/50 shadow-sm transition-all hover:scale-[1.02]"
+                                            className="h-14 rounded-2xl font-bold bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 shadow-sm transition-all hover:scale-[1.02]"
                                         />
                                         <DownloadButton
                                             label="Production Code"

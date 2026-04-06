@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.activity import Activity
@@ -132,13 +132,13 @@ async def delete_project(project_id: int, current_user: User = Depends(get_curre
 @router.get("/download/report/{project_id}")
 async def download_report(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     project = _get_owned_project(db, project_id, current_user.id)
-    buffer = generate_report(project.data)
+    buffer = generate_report(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="REPORT_GEN", description=f"Report downloaded: {project.title}")
     db.add(log); db.commit()
     
-    return StreamingResponse(
-        buffer,
+    return Response(
+        content=buffer.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f"attachment; filename=Report_{project_id}.docx"}
     )
@@ -146,13 +146,13 @@ async def download_report(project_id: int, current_user: User = Depends(get_curr
 @router.get("/download/ppt/{project_id}")
 async def download_ppt(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     project = _get_owned_project(db, project_id, current_user.id)
-    buffer = generate_ppt(project.data)
+    buffer = generate_ppt(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="PPT_GEN", description=f"PPT downloaded: {project.title}")
     db.add(log); db.commit()
     
-    return StreamingResponse(
-        buffer,
+    return Response(
+        content=buffer.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
         headers={"Content-Disposition": f"attachment; filename=Presentation_{project_id}.pptx"}
     )
@@ -160,22 +160,22 @@ async def download_ppt(project_id: int, current_user: User = Depends(get_current
 @router.get("/download/code/{project_id}")
 async def download_code(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     project = _get_owned_project(db, project_id, current_user.id)
-    buffer = generate_code_zip(project.data)
+    buffer = generate_code_zip(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="CODE_GEN", description=f"Code zip downloaded: {project.title}")
     db.add(log); db.commit()
     
-    return StreamingResponse(buffer, media_type="application/zip", headers={"Content-Disposition": f"attachment; filename=Code_{project_id}.zip"})
+    return Response(content=buffer.getvalue(), media_type="application/zip", headers={"Content-Disposition": f"attachment; filename=Code_{project_id}.zip"})
 
 @router.get("/download/full/{project_id}")
 async def download_full_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     project = _get_owned_project(db, project_id, current_user.id)
-    buffer = generate_full_zip(project.data)
+    buffer = generate_full_zip(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="CODE_GEN", description=f"Full package downloaded: {project.title}")
     db.add(log); db.commit()
     
-    return StreamingResponse(buffer, media_type="application/zip", headers={"Content-Disposition": f"attachment; filename=FullProject_{project_id}.zip"})
+    return Response(content=buffer.getvalue(), media_type="application/zip", headers={"Content-Disposition": f"attachment; filename=FullProject_{project_id}.zip"})
 
 @router.get("/templates")
 async def get_public_templates(db: Session = Depends(get_db)):

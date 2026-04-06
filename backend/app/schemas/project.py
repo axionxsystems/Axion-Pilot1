@@ -41,6 +41,9 @@ class VivaRequest(BaseModel):
     messages: List[Dict[str, str]]
     project_data: Dict[str, Any]
 
+class VivaResponse(BaseModel):
+    response: str
+
 class ProjectGenerateRequest(BaseModel):
     topic: str
     techStack: str = Field(..., alias="techStack")

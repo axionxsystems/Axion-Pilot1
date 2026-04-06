@@ -114,13 +114,13 @@ export default function ProjectDetailsPage() {
                     <DownloadButton 
                         label="Source Code"
                         filename={`${project.title.replace(/\s+/g, '_')}_Source.zip`}
-                        onClick={() => api.downloadCode(project)}
+                        onClick={() => api.downloadCode(project.id)}
                         className="bg-card border border-border/50 text-foreground hover:bg-muted font-bold px-6 py-3 rounded-2xl shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                     />
                     <DownloadButton 
                         label="Export Everything"
                         filename={`${project.title.replace(/\s+/g, '_')}_Full_Suite.zip`}
-                        onClick={() => api.downloadFullProject(project)}
+                        onClick={() => api.downloadFullProject(project.id)}
                         className="bg-primary text-primary-foreground font-black px-8 py-3 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                     />
                 </div>

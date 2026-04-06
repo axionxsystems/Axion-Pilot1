@@ -8,9 +8,11 @@ class Project(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    topic = Column(String)
+    title = Column(String)
+    domain = Column(String)
+    difficulty = Column(String)
     tech_stack = Column(String)
-    complexity = Column(String)
+    data = Column(JSON, nullable=True) # Full generation details json
     status = Column(String, default="active") # active, flagged, low_quality, deleted
     created_at = Column(DateTime, default=datetime.utcnow)
 
