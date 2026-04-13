@@ -106,8 +106,8 @@ export function ActivityFeed() {
                                 <act.icon className={cn("w-4 h-4", act.color)} />
                             </div>
                         </div>
-                        <div className="pt-1.5 transition-all duration-300 group-hover:translate-x-1">
-                            <p className="text-sm font-bold text-zinc-200 leading-tight group-hover:text-white transition-colors">{act.text}</p>
+                        <div className="pt-1.5 transition-all duration-300 group-hover:translate-x-1 flex-1 min-w-0">
+                            <p className="text-sm font-bold text-zinc-200 leading-tight group-hover:text-white transition-colors truncate">{act.text}</p>
                             <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5 mt-2">
                                 <Clock className="w-3 h-3" />
                                 {act.time}
@@ -154,11 +154,11 @@ export function SuggestionPanel() {
                         <div className="p-3 rounded-2xl bg-white/5 border border-white/5 group-hover:scale-110 transition-all duration-500">
                             <sug.icon className={cn("w-5 h-5", sug.color)} />
                         </div>
-                        <div className="flex-1">
-                            <p className="font-bold text-zinc-200 text-sm leading-tight group-hover:text-white transition-colors">{sug.title}</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-zinc-200 text-sm leading-tight group-hover:text-white transition-colors truncate">{sug.title}</p>
                             <div className="flex items-center gap-2 mt-2">
-                                <span className="text-[9px] uppercase font-black text-zinc-500 tracking-tighter bg-white/5 px-2 py-0.5 rounded-md border border-white/5">{sug.domain}</span>
-                                <span className="text-[9px] uppercase font-black text-zinc-500 tracking-tighter bg-white/5 px-2 py-0.5 rounded-md border border-white/5">{sug.diff}</span>
+                                <span className="text-[9px] uppercase font-black text-zinc-500 tracking-tighter bg-white/5 px-2 py-0.5 rounded-md border border-white/5 truncate">{sug.domain}</span>
+                                <span className="text-[9px] uppercase font-black text-zinc-500 tracking-tighter bg-white/5 px-2 py-0.5 rounded-md border border-white/5 uppercase shrink-0">{sug.diff}</span>
                             </div>
                         </div>
                         <div className="p-2 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -191,17 +191,17 @@ export function RecentProjectsList({ projects }: { projects: any[] }) {
                     <div key={proj.id} className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 hover:border-blue-500/30 hover:bg-white/[0.04] transition-all duration-300 group relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 blur-2xl group-hover:bg-blue-500/10 transition-all" />
                         
-                        <div className="flex justify-between items-start mb-6">
-                            <h4 className="font-bold text-zinc-200 line-clamp-1 group-hover:text-white transition-colors">{proj.title}</h4>
-                            <span className="text-[9px] font-black uppercase tracking-[1px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                        <div className="flex justify-between items-start mb-6 gap-3">
+                            <h4 className="font-bold text-zinc-200 line-clamp-1 group-hover:text-white transition-colors flex-1 min-w-0">{proj.title}</h4>
+                            <span className="text-[9px] font-black uppercase tracking-[1px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)] shrink-0">
                                 READY
                             </span>
                         </div>
                         
                         <div className="space-y-3">
-                            <div className="flex justify-between text-[10px] text-zinc-500 font-black uppercase tracking-widest">
-                                <span>Optimization</span>
-                                <span className="text-emerald-400">100%</span>
+                            <div className="flex justify-between items-center text-[10px] text-zinc-500 font-black uppercase tracking-wider">
+                                <span className="truncate mr-2">Optimization</span>
+                                <span className="text-emerald-400 shrink-0">100%</span>
                             </div>
                             <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                                 <div className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 w-full shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-in slide-in-from-left duration-1000" />
@@ -209,9 +209,9 @@ export function RecentProjectsList({ projects }: { projects: any[] }) {
                         </div>
                         
                         <Link href={`/dashboard/projects/${proj.id}`} className="block mt-6">
-                            <Button variant="outline" className="w-full rounded-2xl bg-white/5 border-white/10 hover:bg-blue-500 hover:text-white hover:border-blue-500 font-bold text-xs tracking-tight transition-all duration-300 group/btn">
-                                Open Workspace
-                                <ArrowRight className="w-3.5 h-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                            <Button variant="outline" className="w-full rounded-2xl bg-white/5 border-white/10 hover:bg-blue-500 hover:text-white hover:border-blue-500 font-bold text-xs tracking-tight transition-all duration-300 group/btn px-4 py-2 h-auto min-h-[40px]">
+                                <span className="truncate">Open Workspace</span>
+                                <ArrowRight className="w-3.5 h-3.5 ml-2 group-hover/btn:translate-x-1 transition-transform shrink-0" />
                             </Button>
                         </Link>
                     </div>

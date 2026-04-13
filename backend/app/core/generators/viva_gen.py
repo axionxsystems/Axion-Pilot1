@@ -1,11 +1,14 @@
 from .llm_client import LLMClient
-from ..prompts.system_prompts import VIVA_ASSISTANT_SYSTEM_PROMPT
+from ..prompts.system_prompts import VIVA_ASSISTANT_SYSTEM_PROMPT, PLATFORM_ASSISTANT_SYSTEM_PROMPT
 
 def get_viva_response(api_key, provider, history, project_data):
     """
-    Generates a response for the viva assistant based on chat history and project context.
+    Generates a response for the assistant based on chat history and optional project context.
     """
     client = LLMClient(api_key=api_key, provider=provider)
+    
+    # Decide which system prompt to use
+    system_prompt = VIVA_ASSISTANT_SYSTEM_PROMPT if project_data else PLATFORM_ASSISTANT_SYSTEM_PROMPT
     
     # Construct context from project data
     context = ""
@@ -19,19 +22,11 @@ def get_viva_response(api_key, provider, history, project_data):
         """
     
     # Format messages for LLM
-    messages = [{"role": "system", "content": VIVA_ASSISTANT_SYSTEM_PROMPT + "\n" + context}]
-    for msg in history:
-        messages.append({"role": msg["role"], "content": msg["content"]})
-        
-    # We need to expose the raw message structure to the client or reconstruct the prompt
     # Simplification: We'll just append the last question with context to a wrapper if simple generation
-    # But LLMClient.generate takes a string prompt. We should enhance LLMClient to handle messages or stringify.
-    # For now, let's just format the conversation as a string script.
-    
     conversation_str = ""
     for msg in history:
         conversation_str += f"{msg['role'].upper()}: {msg['content']}\n"
         
-    final_prompt = f"{context}\n\nConversation History:\n{conversation_str}\n\nEXAMINER (You):"
+    final_prompt = f"{context}\n\nConversation History:\n{conversation_str}\n\nAI ASSISTANT (You):"
     
-    return client.generate(final_prompt, system_prompt=VIVA_ASSISTANT_SYSTEM_PROMPT)
+    return client.generate(final_prompt, system_prompt=system_prompt)

@@ -16,13 +16,15 @@ export default function ForgotPasswordPage() {
     
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
 
     const handleRequest = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setLoading(true);
         try {
-            await api.forgotPassword(email);
+            const res = await api.forgotPassword(email);
+            if (res.message) setSuccessMessage(res.message);
             setStage(2);
         } catch (err: any) {
             setError(err.message || "Failed to send reset code.");
@@ -110,7 +112,24 @@ export default function ForgotPasswordPage() {
                     )}
 
                     {stage === 2 && (
-                        <form onSubmit={handleReset} className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                        <div className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                            {successMessage && successMessage.includes("[DEV]") && (
+                                <div className="p-5 rounded-xl bg-amber-500/15 border-2 border-amber-500/40 text-center">
+                                    <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">⚡ Dev Mode — Your Reset Code</p>
+                                    <p className="text-4xl font-mono font-black tracking-[0.4em] text-amber-300">
+                                        {successMessage.match(/\d{6}/)?.[0] || ""}
+                                    </p>
+                                    <p className="text-xs text-amber-400/70 mt-2">Enter this code below to reset your password</p>
+                                </div>
+                            )}
+                            {successMessage && !successMessage.includes("[DEV]") && (
+                                <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm flex items-start gap-3">
+                                    <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <p>{successMessage}</p>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleReset} className="space-y-5">
                              <div className="space-y-2 text-center mb-2">
                                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recovery Code</label>
                                 <input
@@ -157,6 +176,7 @@ export default function ForgotPasswordPage() {
                                 </>}
                             </button>
                         </form>
+                    </div>
                     )}
 
                     {stage === 3 && (

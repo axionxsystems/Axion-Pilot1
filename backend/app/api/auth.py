@@ -102,36 +102,42 @@ def signup_request(request: Request, background_tasks: BackgroundTasks, user: Us
         db.add(pending)
 
     db.commit()
+    logger.info(f"[SIGNUP] Registration pending for {email}")
+    
+    # Send OTP via email
     logger.info(f"[SIGNUP] OTP generated for {email}: {email_otp}")
     print(f"[DEV] Signup OTP for {email}: {email_otp}")
-
+    
     # Send email OTP in background
     background_tasks.add_task(mailer.send_otp, email, email_otp, "Signup Verification")
-    msg = "Verification code sent to your Gmail."
-    if os.environ.get("ENV") == "development":
-        msg = f"[DEV] Code sent to {email}. (DEBUG: {email_otp})"
+    
+    msg = "Registration pending. Please verify your email to complete signup."
     return {"message": msg}
 
 
 @router.post("/verify-signup", response_model=UserResponse)
 @limiter.limit("10/minute")
 def verify_signup(request: Request, data: SignupVerify, db: Session = Depends(get_db)):
-    """Finish signup — validates email OTP and creates User in DB."""
+    """Finish signup — creates User in DB after OTP verification."""
     email = _normalize_email(data.email)
     pending = db.query(SignupVerification).filter(SignupVerification.email == email).first()
 
-    if not pending or (datetime.utcnow() > pending.expires_at):
-        if pending:
-            db.delete(pending)
-            db.commit()
+    if not pending:
+        raise HTTPException(status_code=400, detail="Registration session not found. Please sign up again.")
+
+    # Verify OTP hasn't expired
+    if datetime.utcnow() > pending.expires_at:
+        db.delete(pending)
+        db.commit()
         raise HTTPException(status_code=400, detail="Registration session expired. Please sign up again.")
 
+    # Check attempt limit
     if pending.attempt_count >= OTP_MAX_ATTEMPTS:
         db.delete(pending)
         db.commit()
         raise HTTPException(status_code=429, detail="Too many failed attempts. Please restart signup.")
 
-    # Check email OTP hash only
+    # Verify email OTP
     if pending.email_otp_hash != _hash_otp(data.email_otp):
         pending.attempt_count += 1
         db.commit()
@@ -158,10 +164,10 @@ def verify_signup(request: Request, data: SignupVerify, db: Session = Depends(ge
 
 # ── Login Flow (Step 1 & Step 2 for MFA) ──────────────────────────────────────
 
-@router.post("/login", response_model=LoginPending)
+@router.post("/login")
 @limiter.limit("10/minute")
 def login_step1(request: Request, background_tasks: BackgroundTasks, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """Password Check → Generates Hashed OTP for 2FA."""
+    """Password Check → Sends OTP via email (2FA enabled)."""
     email = _normalize_email(form_data.username)
     user = db.query(User).filter(User.email == email).first()
 
@@ -172,6 +178,7 @@ def login_step1(request: Request, background_tasks: BackgroundTasks, form_data: 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account suspended. Contact support.")
 
+    # Generate OTP for 2FA
     otp = _generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)
     existing = db.query(LoginVerification).filter(LoginVerification.user_id == user.id).first()
@@ -188,8 +195,12 @@ def login_step1(request: Request, background_tasks: BackgroundTasks, form_data: 
     print(f"[DEV] Login OTP for {email}: {otp}")
 
     # Send OTP email in background so login response is instant
-    background_tasks.add_task(mailer.send_otp, email, otp, "Login")
-    return LoginPending(message="2FA code sent to your email.")
+    background_tasks.add_task(mailer.send_otp, email, otp, "Login Verification")
+    msg = "2FA code sent to your email. Check your inbox."
+    if os.environ.get("ENV") == "development":
+        msg = f"[DEV] 2FA code for {email}: {otp}"
+    return LoginPending(message=msg)
+
 
 
 @router.post("/login/verify-otp", response_model=Token)
@@ -231,7 +242,7 @@ def login_step2(request: Request, data: LoginOTPVerify, db: Session = Depends(ge
 @router.post("/forgot-password")
 @limiter.limit("5/minute")
 def forgot_password(request: Request, background_tasks: BackgroundTasks, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Send a password reset OTP to the registered email."""
+    """Password reset endpoint."""
     email = _normalize_email(data.email)
     logger.info(f"[FORGOT-PWD] Request for: {email}")
 
@@ -262,38 +273,38 @@ def forgot_password(request: Request, background_tasks: BackgroundTasks, data: F
         logger.info(f"[FORGOT-PWD] OTP generated for {email}: {otp}")
         print(f"[DEV] Password-reset OTP for {email}: {otp}")
 
-        # Send reset OTP email (temporarily sync for debugging)
-        success = mailer.send_otp(email, otp, "Password Reset")
-        if not success:
-            logger.error(f"Synchronous email delivery failed for {email}")
+        # Send reset OTP email in background
+        background_tasks.add_task(mailer.send_otp, email, otp, "Password Reset")
 
     msg = "If an account with that email exists, a reset code has been sent."
-    if os.environ.get("ENV") == "development" and user and user.is_active:
-        msg = f"[DEV] Code sent to {email}. (DEBUG: {otp})"
     return {"message": msg}
 
 
 @router.post("/reset-password")
 @limiter.limit("5/minute")
 def reset_password(request: Request, data: ForgotPasswordReset, db: Session = Depends(get_db)):
-    """Verify OTP and update password."""
+    """Update password after OTP verification."""
     email = _normalize_email(data.email)
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=400, detail="Invalid request.")
 
     v = db.query(ForgotPasswordVerification).filter(ForgotPasswordVerification.user_id == user.id).first()
+    
+    # Verify OTP exists and hasn't expired
     if not v or datetime.utcnow() > v.expires_at:
         if v:
             db.delete(v)
             db.commit()
         raise HTTPException(status_code=400, detail="Reset code expired. Please request a new one.")
 
+    # Check attempt limit
     if v.attempt_count >= OTP_MAX_ATTEMPTS:
         db.delete(v)
         db.commit()
         raise HTTPException(status_code=429, detail="Too many attempts. Please request a new reset code.")
 
+    # Verify OTP
     if v.otp_hash != _hash_otp(data.otp):
         v.attempt_count += 1
         db.commit()
@@ -304,8 +315,10 @@ def reset_password(request: Request, data: ForgotPasswordReset, db: Session = De
     user.hashed_password = get_password_hash(data.new_password)
     user.token_version = user.token_version + 1
     db.query(LoginVerification).filter(LoginVerification.user_id == user.id).delete()
-    db.delete(v)
-    db.add(Activity(user_id=user.id, action_type="PWD_RESET", description="Password reset via OTP"))
+    # Delete password reset verification record
+    if v:
+        db.delete(v)
+    db.add(Activity(user_id=user.id, action_type="PWD_RESET", description="Password reset"))
     db.commit()
     logger.info(f"[RESET-PWD] Password updated for {email}")
     return {"message": "Password updated successfully. Please log in with your new password."}

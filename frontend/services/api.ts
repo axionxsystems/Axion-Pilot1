@@ -245,7 +245,10 @@ export const api = {
                 project_data: projectData
             }),
         });
-        if (!response.ok) throw new Error("Viva chat failed");
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || "Viva chat failed");
+        }
         return response.json();
     },
 

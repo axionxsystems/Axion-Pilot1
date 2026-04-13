@@ -7,10 +7,11 @@ import { api, User } from "../services/api";
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    loginStep1: (email: string, password: string) => Promise<{ requires_otp: boolean }>;
+    loginStep1: (email: string, password: string) => Promise<{ requires_otp: boolean; message?: string }>;
     loginStep2: (email: string, otp: string) => Promise<void>;
-    signup: (email: string, password: string, fullName: string, mobile?: string) => Promise<void>;
+    signup: (email: string, password: string, fullName: string, mobile?: string) => Promise<{ message?: string }>;
     verifySignup: (email: string, emailOtp: string, mobileOtp?: string) => Promise<void>;
+    forgotPassword: (email: string) => Promise<{ message?: string }>;
     logout: () => void;
     refreshUser: () => Promise<void>;
 }
@@ -53,7 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signup = async (email: string, password: string, fullName: string, mobile?: string) => {
-        await api.signup(email, password, fullName, mobile);
+        return await api.signup(email, password, fullName, mobile);
+    };
+
+    const forgotPassword = async (email: string) => {
+        return await api.forgotPassword(email);
     };
 
     // mobileOtp is now optional / ignored by the backend — email OTP only
@@ -75,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             loginStep2, 
             signup, 
             verifySignup,
+            forgotPassword,
             logout,
             refreshUser
         }}>

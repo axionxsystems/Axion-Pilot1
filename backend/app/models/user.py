@@ -20,6 +20,7 @@ class User(Base):
     token_version = Column(Integer, server_default="1", default=1, nullable=False)
 
     projects = relationship("Project", back_populates="owner")
+    passkeys = relationship("PassKey", back_populates="user", cascade="all, delete-orphan")
 
 
 # ── Temporary verification storage (Hashed OTPs only) ──────────────────────────

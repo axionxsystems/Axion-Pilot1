@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
 from app.database import engine, Base
-from app.api import auth, users, projects, project, viva, admin
+from app.api import auth, users, projects, project, viva, admin, passkey
 from app.limiter import limiter
 
 # ── Logging ──────────────────────────────────────────────────────────────────
@@ -86,6 +86,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(passkey.router, prefix="/api/auth", tags=["Passkey"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(project.router, prefix="/project", tags=["Project Generation"])

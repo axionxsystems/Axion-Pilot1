@@ -162,7 +162,7 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                                     onChange={handleChange}
                                     className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 appearance-none cursor-pointer hover:bg-muted/30 transition-colors font-medium"
                                 >
-                                    <option value="groq">Groq (Default)</option>
+                                    <option value="groq">Groq (Default - Recommended)</option>
                                     <option value="openai">OpenAI (ChatGPT)</option>
                                     <option value="anthropic">Anthropic (Claude)</option>
                                     <option value="xai">xAI (Grok)</option>
@@ -192,7 +192,7 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                                     value={formData.api_key}
                                     onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
                                     className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 font-mono"
-                                    placeholder={`Enter ${formData.ai_provider === 'openai' ? 'sk-...' : formData.ai_provider === 'anthropic' ? 'sk-ant-...' : formData.ai_provider === 'gemini' ? 'AIza...' : 'gsk_...'} key`}
+                                    placeholder={`Enter ${formData.ai_provider === 'openai' ? 'sk-...' : formData.ai_provider === 'anthropic' ? 'sk-ant-...' : formData.ai_provider === 'gemini' ? 'AIza...' : 'gsk_...'} key or leave empty`}
                                 />
                             </div>
                         </div>

@@ -91,8 +91,10 @@ export default function AISettingsPage() {
                                 onChange={(e) => setConfig({...config, model: e.target.value})}
                                 className="w-full p-3 bg-muted/50 border-none rounded-xl font-bold outline-none"
                             >
-                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fastest)</option>
-                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Brainiac)</option>
+                                <option value="llama-3.3-70b-versatile">Groq Llama 3.3 70B (Recommended)</option>
+                                <option value="mixtral-8x7b-32768">Groq Mixtral 8x7B</option>
+                                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                                 <option value="gpt-4o">GPT-4o</option>
                             </select>
                         </div>

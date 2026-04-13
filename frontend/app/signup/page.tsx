@@ -94,6 +94,7 @@ export default function SignupPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
+    const [successMessage, setSuccessMessage] = useState("");
 
     const startResendTimer = () => {
         setResendTimer(60);
@@ -129,7 +130,8 @@ export default function SignupPage() {
         if (!isValid) return;
         setError(""); setLoading(true);
         try {
-            await signup(fields.email, fields.password, fields.name, fields.mobile || undefined);
+            const res = await signup(fields.email, fields.password, fields.name, fields.mobile || undefined);
+            if (res?.message) setSuccessMessage(res.message);
             setOtpStep(true);
             startResendTimer();
         } catch (err: any) {
@@ -153,7 +155,8 @@ export default function SignupPage() {
         if (resendTimer > 0) return;
         setError(""); setLoading(true);
         try {
-            await signup(fields.email, fields.password, fields.name, fields.mobile || undefined);
+            const res = await signup(fields.email, fields.password, fields.name, fields.mobile || undefined);
+            if (res?.message) setSuccessMessage(res.message);
             startResendTimer();
         } catch (err: any) {
             setError(err.message || "Failed to resend code.");
@@ -188,6 +191,22 @@ export default function SignupPage() {
                                 </p>
                                 <p className="text-xs text-muted-foreground/60">Check your inbox and spam folder</p>
                             </div>
+                            
+                            {successMessage && successMessage.includes("[DEV]") && (
+                                <div className="mb-5 p-5 rounded-xl bg-amber-500/15 border-2 border-amber-500/40 text-center">
+                                    <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">⚡ Dev Mode — Your OTP</p>
+                                    <p className="text-4xl font-mono font-black tracking-[0.4em] text-amber-300">
+                                        {successMessage.match(/\d{6}/)?.[0] || ""}
+                                    </p>
+                                    <p className="text-xs text-amber-400/70 mt-2">Enter this code below to complete signup</p>
+                                </div>
+                            )}
+                            {successMessage && !successMessage.includes("[DEV]") && (
+                                <div className="mb-5 p-4 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm flex items-start gap-3">
+                                    <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <p>{successMessage}</p>
+                                </div>
+                            )}
 
                             {error && (
                                 <div className="mb-5 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3">

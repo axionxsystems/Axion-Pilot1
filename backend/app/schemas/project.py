@@ -3,9 +3,9 @@ from typing import Optional, List, Dict, Any
 
 class ProjectRequest(BaseModel):
     # api_key is accepted for frontend compatibility but IGNORED server-side if not explicitly given.
-    # The server uses its own GROQ_API_KEY environment variable if empty.
+    # The server uses its own GEMINI_API_KEY or GROQ_API_KEY environment variable if empty.
     api_key: Optional[str] = Field(default=None, max_length=200)
-    ai_provider: Optional[str] = Field(default="groq", max_length=50)
+    ai_provider: Optional[str] = Field(default=None, max_length=50)  # Auto-detect from env
     domain: str = Field(..., min_length=2, max_length=100)
     topic: Optional[str] = Field(default="Random innovative topic", max_length=200)
     description: Optional[str] = Field(default="", max_length=1000)
@@ -37,9 +37,9 @@ class ProjectResponse(BaseModel):
 
 class VivaRequest(BaseModel):
     api_key: Optional[str] = Field(default=None)
-    ai_provider: Optional[str] = Field(default="groq")
+    ai_provider: Optional[str] = Field(default=None)  # Auto-detect from env (Gemini first, then Groq)
     messages: List[Dict[str, str]]
-    project_data: Dict[str, Any]
+    project_data: Optional[Dict[str, Any]] = None
 
 class VivaResponse(BaseModel):
     response: str

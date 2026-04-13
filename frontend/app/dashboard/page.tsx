@@ -164,18 +164,18 @@ export default function Dashboard() {
                                 </div>
                                 <div className="space-y-6">
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">AI Credits Used</span>
-                                            <span className="text-xs font-black text-white">850 / 1000</span>
+                                        <div className="flex justify-between items-end gap-2">
+                                            <span className="text-[11px] font-black text-zinc-400 uppercase tracking-wider truncate">AI Credits Used</span>
+                                            <span className="text-xs font-black text-white shrink-0">850 / 1000</span>
                                         </div>
                                         <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
                                             <div className="h-full w-[85%] bg-gradient-to-r from-orange-600 to-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.3)]" />
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">API Endpoint Calls</span>
-                                            <span className="text-xs font-black text-white">4.2k / 10k</span>
+                                        <div className="flex justify-between items-end gap-2">
+                                            <span className="text-[11px] font-black text-zinc-400 uppercase tracking-wider truncate">API Endpoint Calls</span>
+                                            <span className="text-xs font-black text-white shrink-0">4.2k / 10k</span>
                                         </div>
                                         <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
                                             <div className="h-full w-[42%] bg-gradient-to-r from-blue-600 to-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]" />

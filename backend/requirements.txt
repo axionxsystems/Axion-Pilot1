@@ -6,6 +6,8 @@ pydantic
 python-dotenv
 # Core dependencies from original project
 groq
+google-genai
+litellm
 python-docx
 python-pptx
 pandas
@@ -19,3 +21,5 @@ passlib[bcrypt]
 python-jose[cryptography]
 email-validator
 httpx
+webauthn
+cbor2

@@ -70,6 +70,9 @@ class Mailer:
 
         except Exception as e:
             logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
+            # In dev, ensure the OTP is still visible in logs even if SMTP fails
+            if os.environ.get("ENV") == "development":
+                print(f"[DEV-FALLBACK] SMTP failed, but here is the OTP for {recipient_email}: {otp}")
             return False
 
     def send_signup_otps(self, recipient_email: str, email_otp: str, mobile_otp: str):

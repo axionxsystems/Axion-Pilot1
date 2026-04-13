@@ -22,6 +22,7 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
+    const [successMessage, setSuccessMessage] = useState("");
 
     const startResendTimer = () => {
         setResendTimer(60);
@@ -43,6 +44,7 @@ export default function LoginPage() {
         setLoading(true);
         try {
             const res = await loginStep1(email, password);
+            if (res.message) setSuccessMessage(res.message);
             if (res.requires_otp) {
                 setIsOtpStep(true);
             }
@@ -80,7 +82,8 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
         try {
-            await loginStep1(email, password);
+            const res = await loginStep1(email, password);
+            if (res.message) setSuccessMessage(res.message);
             startResendTimer();
         } catch (err: any) {
             setError("Failed to resend code.");
@@ -113,7 +116,7 @@ export default function LoginPage() {
                         </h2>
                         <p className="text-muted-foreground mt-2 text-sm">
                             {isOtpStep 
-                                ? `We've sent a code to ${email}`
+                                ? (successMessage || `A verification code was sent to ${email}`)
                                 : "Enter your credentials to access your workspace"
                             }
                         </p>
@@ -177,7 +180,24 @@ export default function LoginPage() {
                             </button>
                         </form>
                     ) : (
-                        <form onSubmit={handleStep2} className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                        <div className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                            {successMessage && successMessage.includes("[DEV]") && (
+                                <div className="p-5 rounded-xl bg-amber-500/15 border-2 border-amber-500/40 text-center">
+                                    <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">⚡ Dev Mode — Your OTP</p>
+                                    <p className="text-4xl font-mono font-black tracking-[0.4em] text-amber-300">
+                                        {successMessage.match(/\d{6}/)?.[0] || ""}
+                                    </p>
+                                    <p className="text-xs text-amber-400/70 mt-2">Copy this code into the field below</p>
+                                </div>
+                            )}
+                            {successMessage && !successMessage.includes("[DEV]") && (
+                                <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm flex items-start gap-3">
+                                    <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <p>{successMessage}</p>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleStep2} className="space-y-5">
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1 text-center block">Security Code</label>
                                 <div className="relative group">
@@ -230,7 +250,8 @@ export default function LoginPage() {
                                 </div>
                             </div>
                         </form>
-                    )}
+                    </div>
+                )}
 
                     {!isOtpStep && (
                         <div className="mt-6 text-center">
