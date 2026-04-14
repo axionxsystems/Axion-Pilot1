@@ -68,8 +68,9 @@ export function ChatBot() {
     if (isExcludedPage) return null;
 
     return (
-        <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-4 pointer-events-none">
-            <AnimatePresence mode="wait">
+        <div className="fixed inset-0 pointer-events-none z-[100]">
+            <div className="absolute bottom-8 right-8 flex flex-col items-end gap-4 pointer-events-none">
+                <AnimatePresence mode="wait">
                 {isOpen && (
                     <motion.div
                         initial={{ opacity: 0, y: 20, scale: 0.95, filter: "blur(10px)" }}
@@ -78,7 +79,7 @@ export function ChatBot() {
                         transition={{ type: "spring", damping: 20, stiffness: 300 }}
                         className={cn(
                             "bg-[rgba(10,13,20,0.85)] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden",
-                            isMaximized ? "w-[85vw] h-[85vh] max-w-5xl" : "w-[420px] h-[650px] max-w-[calc(100vw-4rem)]"
+                            isMaximized ? "w-[85vw] h-[85vh] max-w-5xl" : "w-[420px] h-[650px] max-h-[calc(100vh-8rem)]"
                         )}
                     >
                         {/* Premium Header */}
@@ -125,7 +126,7 @@ export function ChatBot() {
                             {apiKey ? (
                                 <>
                                     {messages.length === 0 && (
-                                        <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-12 animate-in fade-in duration-1000">
+                                        <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-4 animate-in fade-in duration-1000">
                                             <div className="relative">
                                                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full animate-pulse" />
                                                 <div className="w-24 h-24 rounded-[3rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 flex items-center justify-center relative z-10 shadow-2xl backdrop-blur-xl">
@@ -273,6 +274,7 @@ export function ChatBot() {
                     </>
                 )}
             </motion.button>
+            </div>
         </div>
     );
 }
