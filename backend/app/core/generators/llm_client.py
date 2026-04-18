@@ -15,25 +15,31 @@ class LLMClient:
         self.provider = provider.strip().lower() if provider else ""
         
         # Auto-detect API keys from environment if not provided
-        # PRIORITY: Groq > Anthropic > OpenAI > Gemini (to avoid quota issues)
+        # PRIORITY: Gemini > Groq > Anthropic > OpenAI
         if not self.api_key:
-            # Try Groq first (most reliable)
-            self.api_key = os.getenv("GROQ_API_KEY")
+            # Try Gemini first (requested default)
+            self.api_key = os.getenv("GEMINI_API_KEY")
             if self.api_key:
-                self.provider = "groq"
-                print(f"DEBUG: LLMClient Loaded GROQ_API_KEY from env")
+                self.provider = "gemini"
+                print(f"DEBUG: LLMClient Loaded GEMINI_API_KEY from env")
             else:
-                # Fall back to other providers
-                self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
+                # Fall back to Groq
+                self.api_key = os.getenv("GROQ_API_KEY")
                 if self.api_key:
-                    if os.getenv("ANTHROPIC_API_KEY"):
-                        self.provider = "anthropic"
-                        print(f"DEBUG: LLMClient Loaded ANTHROPIC_API_KEY from env")
-                    else:
-                        self.provider = "openai"
-                        print(f"DEBUG: LLMClient Loaded OPENAI_API_KEY from env")
+                    self.provider = "groq"
+                    print(f"DEBUG: LLMClient Loaded GROQ_API_KEY from env")
                 else:
-                    print("DEBUG: No Groq/Anthropic/OpenAI keys found - may use Gemini if explicitly requested")
+                    # Fall back to other providers
+                    self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
+                    if self.api_key:
+                        if os.getenv("ANTHROPIC_API_KEY"):
+                            self.provider = "anthropic"
+                            print(f"DEBUG: LLMClient Loaded ANTHROPIC_API_KEY from env")
+                        else:
+                            self.provider = "openai"
+                            print(f"DEBUG: LLMClient Loaded OPENAI_API_KEY from env")
+                    else:
+                        print("DEBUG: No Gemini/Groq/Anthropic/OpenAI keys found")
         
         # Auto-detect provider from API key format if provider not specified
         if self.api_key and not self.provider:
@@ -46,7 +52,7 @@ class LLMClient:
             elif self.api_key.startswith("AIza"):
                 self.provider = "gemini"
             else:
-                self.provider = "groq"  # default to Groq
+                self.provider = "gemini"  # default to Gemini
         
         if not self.api_key:
             raise ValueError("API Key is required")
@@ -55,7 +61,7 @@ class LLMClient:
         if self.provider == "groq":
             self.model = "llama-3.3-70b-versatile"
         elif self.provider == "gemini":
-            self.model = "gemini-2.0-flash"
+            self.model = "gemini-1.5-flash"
         elif self.provider == "openai":
             self.model = "gpt-4o-mini"
         elif self.provider == "anthropic":

@@ -55,8 +55,8 @@ export function ChatBot() {
 
         try {
             const history = [...messages, newMsg];
-            // Passing null for projectData as this is a general dashboard chatbot
-            const res = await api.chatViva(apiKey, history, null);
+            // Passing 'gemini' explicitly as the user requested Gemini for chatbot
+            const res = await api.chatViva(apiKey || "", history, null, "gemini");
             setMessages(prev => [...prev, { role: "assistant", content: res.response }]);
         } catch (err: any) {
             setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Error: " + (err.message || "Failed to connect to AI service.") }]);
@@ -205,20 +205,24 @@ export function ChatBot() {
                                     </div>
                                     <div className="space-y-3">
                                         <h4 className="text-2xl font-black text-white tracking-tighter">Secure Link Required</h4>
-                                        <p className="text-xs text-zinc-500 font-bold leading-relaxed uppercase tracking-widest max-w-[240px] mx-auto">Provide your Groq API key to unlock the Assistant functions.</p>
+                                        <p className="text-xs text-zinc-500 font-bold leading-relaxed uppercase tracking-widest max-w-[240px] mx-auto">Provide your Gemini API key to unlock the Assistant functions.</p>
                                     </div>
                                     <div className="w-full space-y-4">
                                         <div className="relative group">
                                             <input
+                                                id="chatbot-key-input"
                                                 type="password"
                                                 className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-zinc-700 shadow-inner group-hover:border-orange-500/30"
-                                                placeholder="gsk_..."
+                                                placeholder="AIza..."
                                                 value={apiKey}
                                                 onChange={(e) => setApiKey(e.target.value)}
                                             />
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black text-orange-500 uppercase tracking-widest opacity-50">Local Only</div>
                                         </div>
-                                        <Button className="w-full bg-white text-black hover:bg-zinc-200 h-12 rounded-2xl font-black text-[10px] tracking-[4px] uppercase transition-all shadow-2xl">
+                                        <Button 
+                                            onClick={() => document.getElementById("chatbot-key-input")?.focus()}
+                                            className="w-full bg-white text-black hover:bg-zinc-200 h-12 rounded-2xl font-black text-[10px] tracking-[4px] uppercase transition-all shadow-2xl"
+                                        >
                                             ACTIVATE ASSISTANT
                                         </Button>
                                     </div>

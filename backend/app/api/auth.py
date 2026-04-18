@@ -104,10 +104,6 @@ def signup_request(request: Request, background_tasks: BackgroundTasks, user: Us
     db.commit()
     logger.info(f"[SIGNUP] Registration pending for {email}")
     
-    # Send OTP via email
-    logger.info(f"[SIGNUP] OTP generated for {email}: {email_otp}")
-    print(f"[DEV] Signup OTP for {email}: {email_otp}")
-    
     # Send email OTP in background
     background_tasks.add_task(mailer.send_otp, email, email_otp, "Signup Verification")
     
@@ -191,15 +187,11 @@ def login_step1(request: Request, background_tasks: BackgroundTasks, form_data: 
         db.add(LoginVerification(user_id=user.id, otp_hash=_hash_otp(otp), expires_at=expires_at))
 
     db.commit()
-    logger.info(f"[LOGIN] OTP generated for {email}: {otp}")
-    print(f"[DEV] Login OTP for {email}: {otp}")
+
 
     # Send OTP email in background so login response is instant
     background_tasks.add_task(mailer.send_otp, email, otp, "Login Verification")
-    msg = "2FA code sent to your email. Check your inbox."
-    if os.environ.get("ENV") == "development":
-        msg = f"[DEV] 2FA code for {email}: {otp}"
-    return LoginPending(message=msg)
+    return LoginPending(message="2FA code sent to your email. Check your inbox.")
 
 
 
@@ -270,8 +262,7 @@ def forgot_password(request: Request, background_tasks: BackgroundTasks, data: F
             ))
 
         db.commit()
-        logger.info(f"[FORGOT-PWD] OTP generated for {email}: {otp}")
-        print(f"[DEV] Password-reset OTP for {email}: {otp}")
+
 
         # Send reset OTP email in background
         background_tasks.add_task(mailer.send_otp, email, otp, "Password Reset")

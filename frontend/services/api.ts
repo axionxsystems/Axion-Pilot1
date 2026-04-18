@@ -235,12 +235,13 @@ export const api = {
     },
 
     // ── Viva ────────────────────────────────────────────────────────────────
-    chatViva: async (apiKey: string, history: any[], projectData: any) => {
+    chatViva: async (apiKey: string, history: any[], projectData: any, aiProvider?: string) => {
         const response = await fetch(`${API_BASE_URL}/viva/ask`, {
             method: "POST",
             headers: authHeaders(), // Authentication REQUIRED now
             body: JSON.stringify({
                 api_key: apiKey,
+                ai_provider: aiProvider,
                 messages: history,
                 project_data: projectData
             }),

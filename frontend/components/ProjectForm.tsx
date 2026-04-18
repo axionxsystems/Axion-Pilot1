@@ -158,11 +158,12 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                                 </div>
                                 <select
                                     name="ai_provider"
-                                    value={formData.ai_provider || "groq"}
+                                    value={formData.ai_provider || "gemini"}
                                     onChange={handleChange}
                                     className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 appearance-none cursor-pointer hover:bg-muted/30 transition-colors font-medium"
                                 >
-                                    <option value="groq">Groq (Default - Recommended)</option>
+                                    <option value="gemini">Google Gemini (Recommended)</option>
+                                    <option value="groq">Groq (High-Speed Llama)</option>
                                     <option value="openai">OpenAI (ChatGPT)</option>
                                     <option value="anthropic">Anthropic (Claude)</option>
                                     <option value="xai">xAI (Grok)</option>

@@ -24,8 +24,7 @@ class Mailer:
     def send_otp(self, recipient_email: str, otp: str, purpose: str = "login"):
         """Sends an OTP email via Gmail SMTP with enhanced connectivity."""
         if not self.email_user or not self.email_pass or "your_sender" in self.email_user:
-            logger.warning(f"SMTP credentials not configured. OTP for {recipient_email} is: {otp}")
-            print(f"[DEV-DEBUG] OTP for {recipient_email} ({purpose}): {otp}")
+            logger.error(f"SMTP credentials missing. Cannot send OTP to {recipient_email}")
             return False
 
         try:
@@ -70,16 +69,12 @@ class Mailer:
 
         except Exception as e:
             logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
-            # In dev, ensure the OTP is still visible in logs even if SMTP fails
-            if os.environ.get("ENV") == "development":
-                print(f"[DEV-FALLBACK] SMTP failed, but here is the OTP for {recipient_email}: {otp}")
             return False
 
     def send_signup_otps(self, recipient_email: str, email_otp: str, mobile_otp: str):
         """Sends both Email and Mobile OTPs in a single welcome email."""
         if not self.email_user or not self.email_pass or "your_sender" in self.email_user:
-            logger.warning(f"SMTP credentials not configured. OTPs for {recipient_email} are: Email: {email_otp}, Mobile: {mobile_otp}")
-            print(f"[DEV-DEBUG] Signup OTPs for {recipient_email} \u2192 Email: {email_otp} | Mobile: {mobile_otp}")
+            logger.error(f"SMTP credentials missing. Cannot send signup OTPs to {recipient_email}")
             return False
 
         try:

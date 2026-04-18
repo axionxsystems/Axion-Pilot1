@@ -1,5 +1,6 @@
 import json
 import re
+import os
 from .llm_client import LLMClient
 from ..prompts.system_prompts import PROJECT_GENERATOR_SYSTEM_PROMPT
 from ..prompts.templates import (
@@ -34,6 +35,8 @@ def extract_json(text):
         return None
 
 def generate_project(api_key, provider, domain, topic, description, difficulty, tech_stack, level, ai_config=None):
+    if not api_key:
+        api_key = os.getenv("GEMINI_PROJECT_KEY") or os.getenv("GEMINI_API_KEY")
     client = LLMClient(api_key=api_key, provider=provider)
     
     # Extract AI Config
