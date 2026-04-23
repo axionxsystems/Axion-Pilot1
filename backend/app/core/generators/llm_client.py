@@ -1,4 +1,5 @@
 import os
+import logging
 import litellm
 from groq import Groq
 from google import genai
@@ -7,6 +8,8 @@ from google import genai
 from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent.parent.parent / ".env")
+
+logger = logging.getLogger(__name__)
 
 class LLMClient:
     def __init__(self, api_key="", provider=""):
@@ -21,25 +24,25 @@ class LLMClient:
             self.api_key = os.getenv("GEMINI_API_KEY")
             if self.api_key:
                 self.provider = "gemini"
-                print(f"DEBUG: LLMClient Loaded GEMINI_API_KEY from env")
+                logger.debug("LLMClient: Loaded GEMINI_API_KEY from env")
             else:
                 # Fall back to Groq
                 self.api_key = os.getenv("GROQ_API_KEY")
                 if self.api_key:
                     self.provider = "groq"
-                    print(f"DEBUG: LLMClient Loaded GROQ_API_KEY from env")
+                    logger.debug("LLMClient: Loaded GROQ_API_KEY from env")
                 else:
                     # Fall back to other providers
                     self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
                     if self.api_key:
                         if os.getenv("ANTHROPIC_API_KEY"):
                             self.provider = "anthropic"
-                            print(f"DEBUG: LLMClient Loaded ANTHROPIC_API_KEY from env")
+                            logger.debug("LLMClient: Loaded ANTHROPIC_API_KEY from env")
                         else:
                             self.provider = "openai"
-                            print(f"DEBUG: LLMClient Loaded OPENAI_API_KEY from env")
+                            logger.debug("LLMClient: Loaded OPENAI_API_KEY from env")
                     else:
-                        print("DEBUG: No Gemini/Groq/Anthropic/OpenAI keys found")
+                        logger.warning("LLMClient: No Gemini/Groq/Anthropic/OpenAI keys found")
         
         # Auto-detect provider from API key format if provider not specified
         if self.api_key and not self.provider:

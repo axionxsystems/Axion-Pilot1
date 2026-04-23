@@ -28,7 +28,9 @@ def get_viva_response(api_key, provider, history, project_data):
     # Simplification: We'll just append the last question with context to a wrapper if simple generation
     conversation_str = ""
     for msg in history:
-        conversation_str += f"{msg['role'].upper()}: {msg['content']}\n"
+        role = msg.get("role", "user").upper()
+        content = msg.get("content", "")
+        conversation_str += f"{role}: {content}\n"
         
     final_prompt = f"{context}\n\nConversation History:\n{conversation_str}\n\nAI ASSISTANT (You):"
     

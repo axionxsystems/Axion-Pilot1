@@ -1,7 +1,10 @@
 import json
 import re
 import os
+import logging
 from .llm_client import LLMClient
+
+logger = logging.getLogger(__name__)
 from ..prompts.system_prompts import PROJECT_GENERATOR_SYSTEM_PROMPT
 from ..prompts.templates import (
     IDEA_EXPANSION_PROMPT,
@@ -17,9 +20,7 @@ def extract_json(text):
         if not text:
             return None
         text = text.strip()
-        if text.lower().startswith("json"):
-             text = text[4:].strip()
-        
+        # Strip markdown code fences (```json ... ``` or ``` ... ```)
         text = text.replace("```json", "").replace("```", "").strip()
         start = text.find("{")
         end = text.rfind("}") + 1
@@ -31,7 +32,7 @@ def extract_json(text):
             return json.loads(clean_str, strict=False)
         return None
     except Exception as e:
-        print(f"JSON Parse Error: {e}")
+        logger.warning(f"JSON Parse Error: {e}")
         return None
 
 def generate_project(api_key, provider, domain, topic, description, difficulty, tech_stack, level, ai_config=None):
@@ -51,7 +52,7 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
     })
 
     # STAGE 1: IDEA EXPANSION
-    print("Pipeline Stage 1: Idea Expansion")
+    logger.info("Pipeline Stage 1: Idea Expansion")
     idea_prompt = IDEA_EXPANSION_PROMPT.format(
         domain=domain,
         topic=topic,
@@ -69,7 +70,7 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
     # STAGE 2: ARCHITECTURE PLANNING (Conditional)
     arch_data = {}
     if features.get("arch_planning"):
-        print("Pipeline Stage 2: Architecture Planning")
+        logger.info("Pipeline Stage 2: Architecture Planning")
         arch_prompt = ARCHITECTURE_PLANNING_PROMPT.format(
             title=title,
             overview=overview,
@@ -82,7 +83,7 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
     # STAGE 3: CODEBASE GENERATION (Conditional)
     code_data = {"files": []}
     if features.get("deep_code"):
-        print("Pipeline Stage 3: Codebase Generation")
+        logger.info("Pipeline Stage 3: Codebase Generation")
         code_prompt = CODEBASE_GENERATION_PROMPT.format(
             architecture=arch_data.get("system_architecture", "Standard Software Architecture"),
             tech_stack=tech_stack
@@ -93,7 +94,7 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
     # STAGE 4: DOCUMENTATION GENERATION (Conditional)
     doc_data = {}
     if features.get("extended_docs"):
-        print("Pipeline Stage 4: Documentation Generation")
+        logger.info("Pipeline Stage 4: Documentation Generation")
         doc_prompt = DOCUMENTATION_PROMPT.format(
             concept=overview,
             architecture=arch_data.get("system_architecture", "Standard Architecture")
@@ -102,7 +103,7 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
         doc_data = extract_json(res_doc) or {}
 
     # STAGE 5: VIVA PREP
-    print("Pipeline Stage 5: Viva Preparation")
+    logger.info("Pipeline Stage 5: Viva Preparation")
     viva_prompt = VIVA_PREP_PROMPT.format(
         title=title,
         architecture=arch_data.get("system_architecture", "Standard Architecture"),

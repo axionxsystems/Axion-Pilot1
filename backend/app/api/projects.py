@@ -73,10 +73,9 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
             data=project_data
         )
         db.add(db_project)
-        db.commit()
-        db.refresh(db_project)
+        db.flush()  # Get db_project.id without committing yet
         
-        # 5. ACTIVITY LOG
+        # 5. ACTIVITY LOG (same transaction)
         log = Activity(
             user_id=current_user.id, 
             action_type="PROJECT_GEN", 
@@ -85,6 +84,7 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
         )
         db.add(log)
         db.commit()
+        db.refresh(db_project)
         
         project_data["id"] = db_project.id
         project_data["created_at"] = db_project.created_at.isoformat()
@@ -92,11 +92,14 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
 
     except RuntimeError as e:
         # AI Pipeline failure (e.g. Groq timeout/error, Invalid API Key)
+        db.rollback()
         logger.error(f"AI Generation Pipeline failed: {str(e)}")
         raise HTTPException(status_code=502, detail=str(e))
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        if isinstance(e, HTTPException): raise e
         logger.exception("Unexpected error in create_project")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -298,9 +301,10 @@ async def regenerate_project(project_id: int, api_key: str, current_user: User =
         # Regenerate data using stored project metadata
         new_data = generate_project(
             api_key=api_key,
+            provider="",  # Auto-detect from env
             domain=project.domain,
             topic=project.title,
-            description=project.data.get("abstract", ""),
+            description=project.data.get("abstract", "") if isinstance(project.data, dict) else "",
             difficulty=project.difficulty,
             tech_stack=project.tech_stack,
             level="Final Year", # Defaulting to final year or extracting from original

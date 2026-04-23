@@ -45,6 +45,6 @@ def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optio
     try:
         # Reuse get_current_user logic for validation
         return get_current_user(token, db)
-    except:
+    except Exception:
         # Invalid or expired token, but we allow it for public features
         return None
