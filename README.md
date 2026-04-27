@@ -82,4 +82,4 @@ Copy `.env.example` to `.env` in both `frontend` and `backend` directories and p
 
 ## 📄 License
 
-Proprietary - All rights reserved.
+Proprietary - All rights reserved. See the [LICENSE](LICENSE) file for more details.
