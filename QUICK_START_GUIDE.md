@@ -1,5 +1,5 @@
 
-# AXIONX — QUICK START GUIDE
+# AXION-X — QUICK START GUIDE
 ## Solo Founder | Start Here Today
 
 ---

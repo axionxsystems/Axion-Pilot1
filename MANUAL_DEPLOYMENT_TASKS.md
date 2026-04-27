@@ -36,7 +36,7 @@ Render is great for containerless Python applications.
    * `ENV`: `production`
    * `EMAIL_USER`: *(Your Gmail address)*
    * `EMAIL_PASS`: *(Your Gmail App Password)*
-   * `GROQ_API_KEY`: *(Your Groq API key for project generations)*
+   * `GEMINI_API_KEY`: *(Your Gemini API key from key.txt)*
    * `ALLOWED_ORIGINS`: `*` *(For now, until Vercel is live. Once Vercel gives you a domain, change this to your Vercel URL).*
 7. Click **Create Web Service**. Wait for the build to finish. Once live, copy the Render URL (e.g., `https://axionx-backend-xxxx.onrender.com`).
 

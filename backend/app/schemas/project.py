@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Any
 
 class ProjectRequest(BaseModel):
     # api_key is accepted for frontend compatibility but IGNORED server-side if not explicitly given.
-    # The server uses its own GEMINI_API_KEY or GROQ_API_KEY environment variable if empty.
+    # The server uses its own GEMINI_API_KEY environment variable if empty.
     api_key: Optional[str] = Field(default=None, max_length=200)
     ai_provider: Optional[str] = Field(default=None, max_length=50)  # Auto-detect from env
     domain: str = Field(..., min_length=2, max_length=100)
@@ -37,7 +37,7 @@ class ProjectResponse(BaseModel):
 
 class VivaRequest(BaseModel):
     api_key: Optional[str] = Field(default=None)
-    ai_provider: Optional[str] = Field(default=None)  # Auto-detect from env (Gemini first, then Groq)
+    ai_provider: Optional[str] = Field(default=None)  # Auto-detect from env (Gemini default)
     messages: List[Dict[str, str]]
     project_data: Optional[Dict[str, Any]] = None
 

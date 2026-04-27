@@ -71,7 +71,7 @@ export default function ProfilePage() {
                         <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm">
                             {user?.plan || "Free"} Tier
                         </span>
-                        {user?.email === "niyant214@gmail.com" && (
+                        {user?.email === "admin@example.com" && (
                             <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-sm">
                                 Administrator
                             </span>

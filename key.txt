@@ -1,1 +1,3 @@
-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
+# API Keys removed for security
+
+# GEMINI_API_KEY=AIzaSyCnHo6WdoW0g_Pf7amrACdLvt6gcSAc2SE

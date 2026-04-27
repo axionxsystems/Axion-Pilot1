@@ -22,7 +22,7 @@ Project Pilot is an AI-powered SaaS platform designed to help students generate 
 ### Backend
 - **Framework**: FastAPI (Python)
 - **Database**: SQLite (Development) / PostgreSQL (Production)
-- **AI**: Gemini / OpenAI Integration
+- **AI**: Multi-Provider LLM Integration (Standard Engines)
 - **Doc Gen**: Python-docx, Python-pptx
 
 ## 📦 Project Structure

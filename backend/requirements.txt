@@ -5,7 +5,7 @@ python-multipart
 pydantic
 python-dotenv
 # Core dependencies from original project
-groq
+
 google-genai
 litellm
 python-docx

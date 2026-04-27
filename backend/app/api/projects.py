@@ -91,7 +91,7 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
         return project_data
 
     except RuntimeError as e:
-        # AI Pipeline failure (e.g. Groq timeout/error, Invalid API Key)
+        # AI Pipeline failure (e.g. timeout/error, Invalid API Key)
         db.rollback()
         logger.error(f"AI Generation Pipeline failed: {str(e)}")
         raise HTTPException(status_code=502, detail=str(e))

@@ -51,9 +51,9 @@ def main():
         st.title("🎓 AI Project Gen")
         st.info("Industry-Ready Project Generator & Viva Assistant")
         
-        api_key = st.text_input("Enter LLM API Key (Groq/OpenRouter)", type="password", help="Leave empty if set in .env")
+        api_key = st.text_input("Enter AI API Key (Gemini/OpenAI)", type="password", help="Leave empty if set in .env")
         if not api_key:
-             api_key = os.getenv("GROQ_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+             api_key = os.getenv("GEMINI_API_KEY") or os.getenv("OPENAI_API_KEY")
         
         if api_key:
             st.session_state['api_key'] = api_key

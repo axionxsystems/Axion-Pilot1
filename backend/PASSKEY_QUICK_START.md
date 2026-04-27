@@ -4,7 +4,7 @@
 
 Your ProjectPilot backend now supports **passwordless authentication using passkeys** (WebAuthn). This means:
 
-✅ **No more passwords** for niyant214@gmail.com
+✅ **No more passwords** for admin@example.com
 ✅ **Use Face ID, Touch ID, or security keys** instead
 ✅ **Phishing-proof** - Can't steal something you must prove you own
 ✅ **Faster login** - No typing required
@@ -46,7 +46,7 @@ python -m uvicorn app.main:app --reload
 python setup_passkey.py
 ```
 
-Enter: `niyant214@gmail.com`
+Enter: `admin@example.com`
 
 ### 3. Check Passkey Endpoints
 
@@ -54,7 +54,7 @@ Enter: `niyant214@gmail.com`
 # Test 1: Check if user exists
 curl http://localhost:8000/api/auth/passkey/login/start \
   -H "Content-Type: application/json" \
-  -d '{"email": "niyant214@gmail.com"}'
+  -d '{"email": "admin@example.com"}'
 
 # If you get an error about "No active passkeys" - that's expected!
 # No passkeys registered yet.
@@ -98,7 +98,7 @@ curl http://localhost:8000/api/auth/passkey/login/start \
 # Step 1: Start registration
 curl -X POST http://localhost:8000/api/auth/passkey/register/start \
   -H "Content-Type: application/json" \
-  -d {"email":"niyant214@gmail.com", "name":"My Passkey"}
+  -d {"email":"admin@example.com", "name":"My Passkey"}
 
 # Response: { "options": {...}, "challenge": "xyz..." }
 
@@ -107,7 +107,7 @@ curl -X POST http://localhost:8000/api/auth/passkey/register/start \
 # Step 3: Complete registration
 curl -X POST http://localhost:8000/api/auth/passkey/register/complete \
   -H "Content-Type: application/json" \
-  -d {"email":"niyant214@gmail.com", "credential":{...}, "challenge":"xyz", "nickname":"My Face ID"}
+  -d {"email":"admin@example.com", "credential":{...}, "challenge":"xyz", "nickname":"My Face ID"}
 ```
 
 ### Login with a Passkey
@@ -115,7 +115,7 @@ curl -X POST http://localhost:8000/api/auth/passkey/register/complete \
 # Step 1: Start login
 curl -X POST http://localhost:8000/api/auth/passkey/login/start \
   -H "Content-Type: application/json" \
-  -d {"email":"niyant214@gmail.com"}
+  -d {"email":"admin@example.com"}
 
 # Response: { "options": {...}, "challenge": "xyz..." }
 
@@ -124,7 +124,7 @@ curl -X POST http://localhost:8000/api/auth/passkey/login/start \
 # Step 3: Complete login
 curl -X POST http://localhost:8000/api/auth/passkey/login/complete \
   -H "Content-Type: application/json" \
-  -d {"email":"niyant214@gmail.com", "credential":{...}, "challenge":"xyz"}
+  -d {"email":"admin@example.com", "credential":{...}, "challenge":"xyz"}
 
 # Response: { "access_token": "...", "token_type": "bearer" }
 ```
@@ -138,14 +138,14 @@ Use `passkey-client.example.js` as your reference. Example:
 <script src="passkey-client.example.js"></script>
 
 // Register
-<button onclick="registerPasskey('niyant214@gmail.com', 'Niyant', 'My Face ID')
+<button onclick="registerPasskey('admin@example.com', 'Admin', 'My Face ID')
   .then(r => alert('✓ Registered!'))
   .catch(e => alert('✗ ' + e.message))">
   Register Passkey
 </button>
 
 // Login
-<button onclick="loginWithPasskey('niyant214@gmail.com')
+<button onclick="loginWithPasskey('admin@example.com')
   .then(r => {
     localStorage.setItem('token', r.access_token);
     window.location.href = '/dashboard';
@@ -195,11 +195,11 @@ PASSKEY_RP_ID=localhost
 import { registerPasskey, loginWithPasskey } from './passkey-client.js';
 
 export function PasskeyAuth() {
-  const email = 'niyant214@gmail.com';
+  const email = 'admin@example.com';
 
   const handleRegister = async () => {
     try {
-      const result = await registerPasskey(email, 'Niyant', 'My Device');
+      const result = await registerPasskey(email, 'Admin', 'My Device');
       alert(`✓ Passkey registered: ${result.nickname}`);
     } catch (err) {
       alert(`✗ Error: ${err.message}`);

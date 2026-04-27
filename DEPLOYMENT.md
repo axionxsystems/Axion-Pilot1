@@ -15,8 +15,8 @@
 
 1.  **Repository Setup**: Push your code to GitHub.
 2.  **Environment Variables**:
-    *   `GROQ_API_KEY`: Your Groq API Key.
-    *   `OPENROUTER_API_KEY`: (Optional) If using OpenRouter.
+    *   `GEMINI_API_KEY`: Your Gemini API Key.
+    *   `OPENAI_API_KEY`: (Optional) If using OpenAI.
     *   `ENV`: Set to `production`
     *   `ALLOWED_ORIGINS`: Your frontend domain (e.g., `https://yourapp.com`)
 3.  **Build Command**: `pip install -r backend/requirements.txt`
@@ -123,8 +123,8 @@ SECRET_KEY=your-long-secret-key
 ALLOWED_ORIGINS=https://yourapp.com,https://www.yourapp.com
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
-GROQ_API_KEY=your-groq-key
 GEMINI_API_KEY=your-gemini-key
+OPENAI_API_KEY=your-openai-key
 PASSKEY_ORIGIN=https://yourapp.com
 PASSKEY_RP_ID=yourapp.com
 ```

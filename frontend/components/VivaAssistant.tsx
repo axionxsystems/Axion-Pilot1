@@ -48,7 +48,7 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
                 <div className="mb-6 p-5 rounded-2xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="text-xs font-bold text-primary block mb-3 uppercase tracking-[0.1em] flex items-center gap-2">
                         <Key className="w-3.5 h-3.5" />
-                        Gemini AI Configuration
+                        AI Configuration
                     </label>
                     <div className="relative group">
                         <input
@@ -56,7 +56,7 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
                             value={apiKey}
                             onChange={(e) => setApiKey(e.target.value)}
                             className="w-full text-sm py-3 px-4 rounded-xl bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
-                            placeholder="Paste your AIza... key here"
+                            placeholder="Paste your API key here"
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase">
                            Encrypted

@@ -1,7 +1,7 @@
 import sqlite3
 conn = sqlite3.connect('sql_app.db')
 cursor = conn.cursor()
-email = "niyant214@gmail.com"
+email = "admin@example.com"
 try:
     cursor.execute("SELECT email, is_admin FROM users WHERE email = ?", (email,))
     print(cursor.fetchone())

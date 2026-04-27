@@ -14,7 +14,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 def migrate():
     sqlite_path = "sql_app.db"
     pg_url = os.environ.get("DATABASE_URL")
-    super_admin = os.environ.get("SUPER_ADMIN_EMAIL", "niyant214@gmail.com").lower()
+    super_admin = os.environ.get("SUPER_ADMIN_EMAIL", "admin@example.com").lower()
 
     if not os.path.exists(sqlite_path):
         print(f"❌ SQLite file '{sqlite_path}' not found at current location.")

@@ -72,10 +72,10 @@ Use the provided `passkey-client.example.js` as a reference:
 
 ```javascript
 // Register a new passkey
-await registerPasskey('niyant214@gmail.com', 'Niyant', 'My Face ID');
+await registerPasskey('admin@example.com', 'Admin', 'My Face ID');
 
 // Login with passkey
-const result = await loginWithPasskey('niyant214@gmail.com');
+const result = await loginWithPasskey('admin@example.com');
 console.log('Access token:', result.access_token);
 ```
 
@@ -90,8 +90,8 @@ POST /api/auth/passkey/register/start
 Content-Type: application/json
 
 {
-  "email": "niyant214@gmail.com",
-  "name": "Niyant Kumar"  // optional
+  "email": "admin@example.com",
+  "name": "Admin User"  // optional
 }
 ```
 
@@ -121,7 +121,7 @@ POST /api/auth/passkey/register/complete
 Content-Type: application/json
 
 {
-  "email": "niyant214@gmail.com",
+  "email": "admin@example.com",
   "credential": {
     "id": "credential_id",
     "rawId": "base64url_raw_id",
@@ -156,7 +156,7 @@ POST /api/auth/passkey/login/start
 Content-Type: application/json
 
 {
-  "email": "niyant214@gmail.com"
+  "email": "admin@example.com"
 }
 ```
 
@@ -184,7 +184,7 @@ POST /api/auth/passkey/login/complete
 Content-Type: application/json
 
 {
-  "email": "niyant214@gmail.com",
+  "email": "admin@example.com",
   "credential": {
     "id": "credential_id",
     "rawId": "base64url_raw_id",
@@ -207,8 +207,8 @@ Response:
   "token_type": "bearer",
   "user": {
     "id": 1,
-    "email": "niyant214@gmail.com",
-    "name": "Niyant Kumar"
+    "email": "admin@example.com",
+    "name": "Admin User"
   }
 }
 ```
@@ -244,7 +244,7 @@ DELETE /api/auth/passkey/{passkey_id}
 Authorization: Bearer <access_token>
 ```
 
-## Setting Up for niyant214@gmail.com
+## Setting Up for admin@example.com
 
 ### 1. Ensure User Exists
 

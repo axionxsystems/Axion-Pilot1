@@ -97,7 +97,7 @@ Frontend is still building. Wait 30-60 seconds and refresh.
 
 **Test Credentials**
 ```
-Email: niyant214@gmail.com
+Email: admin@example.com
 Password: (Check backend/.env for sample user)
 ```
 

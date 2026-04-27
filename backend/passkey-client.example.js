@@ -362,7 +362,7 @@ async function loginWithPasskey(email) {
 // Example HTML usage:
 /*
 <button onclick="
-  registerPasskey('niyant214@gmail.com', 'Niyant', 'My Face ID')
+  registerPasskey('admin@example.com', 'Admin', 'My Face ID')
     .then(result => alert('Passkey registered! ' + result.nickname))
     .catch(err => alert('Error: ' + err.message));
 ">
@@ -370,7 +370,7 @@ async function loginWithPasskey(email) {
 </button>
 
 <button onclick="
-  loginWithPasskey('niyant214@gmail.com')
+  loginWithPasskey('admin@example.com')
     .then(result => alert('Logged in! Token: ' + result.access_token.substring(0, 20) + '...'))
     .catch(err => alert('Error: ' + err.message));
 ">

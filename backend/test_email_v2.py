@@ -19,7 +19,7 @@ if not EMAIL_USER or not EMAIL_PASS:
     exit(1)
 
 # Try to send a real test email
-RECIPIENT = "niyant210204@gmail.com"
+RECIPIENT = "your-email@example.com"
 OTP = "123456"
 
 msg = MIMEMultipart()

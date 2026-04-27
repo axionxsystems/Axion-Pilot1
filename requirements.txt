@@ -1,5 +1,5 @@
 streamlit
-groq
+
 python-docx
 python-pptx
 pandas

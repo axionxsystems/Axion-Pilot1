@@ -55,7 +55,7 @@ export function ChatBot() {
 
         try {
             const history = [...messages, newMsg];
-            // Passing 'gemini' explicitly as the user requested Gemini for chatbot
+            // Passing the provider explicitly as the user requested for chatbot
             const res = await api.chatViva(apiKey || "", history, null, "gemini");
             setMessages(prev => [...prev, { role: "assistant", content: res.response }]);
         } catch (err: any) {
@@ -205,7 +205,7 @@ export function ChatBot() {
                                     </div>
                                     <div className="space-y-3">
                                         <h4 className="text-2xl font-black text-white tracking-tighter">Secure Link Required</h4>
-                                        <p className="text-xs text-zinc-500 font-bold leading-relaxed uppercase tracking-widest max-w-[240px] mx-auto">Provide your Gemini API key to unlock the Assistant functions.</p>
+                                        <p className="text-xs text-zinc-500 font-bold leading-relaxed uppercase tracking-widest max-w-[240px] mx-auto">Provide your API key to unlock the Assistant functions.</p>
                                     </div>
                                     <div className="w-full space-y-4">
                                         <div className="relative group">
@@ -213,7 +213,7 @@ export function ChatBot() {
                                                 id="chatbot-key-input"
                                                 type="password"
                                                 className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-zinc-700 shadow-inner group-hover:border-orange-500/30"
-                                                placeholder="AIza..."
+                                                placeholder="Enter your key..."
                                                 value={apiKey}
                                                 onChange={(e) => setApiKey(e.target.value)}
                                             />

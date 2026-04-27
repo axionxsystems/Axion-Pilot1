@@ -199,9 +199,9 @@ def main():
     
     ensure_db()
     
-    email = input("\nEnter email (default: niyant214@gmail.com): ").strip()
+    email = input("\nEnter email (default: admin@example.com): ").strip()
     if not email:
-        email = "niyant214@gmail.com"
+        email = "admin@example.com"
     
     print(f"\nChecking user: {email}")
     

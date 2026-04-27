@@ -7,7 +7,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 
 def promote_admin():
     url = os.environ.get("DATABASE_URL")
-    email = "niyant214@gmail.com"
+    email = "admin@example.com"
     engine = create_engine(url)
     with engine.connect() as conn:
         print(f"Promoting {email} to Admin...")

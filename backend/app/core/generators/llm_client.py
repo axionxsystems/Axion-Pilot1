@@ -1,7 +1,6 @@
 import os
 import logging
 import litellm
-from groq import Groq
 from google import genai
 
 # Forced reload for environment variables
@@ -18,7 +17,7 @@ class LLMClient:
         self.provider = provider.strip().lower() if provider else ""
         
         # Auto-detect API keys from environment if not provided
-        # PRIORITY: Gemini > Groq > Anthropic > OpenAI
+        # PRIORITY: Gemini > Anthropic > OpenAI
         if not self.api_key:
             # Try Gemini first (requested default)
             self.api_key = os.getenv("GEMINI_API_KEY")
@@ -26,29 +25,21 @@ class LLMClient:
                 self.provider = "gemini"
                 logger.debug("LLMClient: Loaded GEMINI_API_KEY from env")
             else:
-                # Fall back to Groq
-                self.api_key = os.getenv("GROQ_API_KEY")
+                # Fall back to other providers
+                self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
                 if self.api_key:
-                    self.provider = "groq"
-                    logger.debug("LLMClient: Loaded GROQ_API_KEY from env")
-                else:
-                    # Fall back to other providers
-                    self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
-                    if self.api_key:
-                        if os.getenv("ANTHROPIC_API_KEY"):
-                            self.provider = "anthropic"
-                            logger.debug("LLMClient: Loaded ANTHROPIC_API_KEY from env")
-                        else:
-                            self.provider = "openai"
-                            logger.debug("LLMClient: Loaded OPENAI_API_KEY from env")
+                    if os.getenv("ANTHROPIC_API_KEY"):
+                        self.provider = "anthropic"
+                        logger.debug("LLMClient: Loaded ANTHROPIC_API_KEY from env")
                     else:
-                        logger.warning("LLMClient: No Gemini/Groq/Anthropic/OpenAI keys found")
+                        self.provider = "openai"
+                        logger.debug("LLMClient: Loaded OPENAI_API_KEY from env")
+                else:
+                    logger.warning("LLMClient: No Gemini/Anthropic/OpenAI keys found")
         
         # Auto-detect provider from API key format if provider not specified
         if self.api_key and not self.provider:
-            if self.api_key.startswith("gsk_"):
-                self.provider = "groq"
-            elif self.api_key.startswith("sk-ant"):
+            if self.api_key.startswith("sk-ant"):
                 self.provider = "anthropic"
             elif self.api_key.startswith("sk-") and "proj" in self.api_key:
                 self.provider = "openai"
@@ -61,9 +52,7 @@ class LLMClient:
             raise ValueError("API Key is required")
 
         # Set optimal models based on provider
-        if self.provider == "groq":
-            self.model = "llama-3.3-70b-versatile"
-        elif self.provider == "gemini":
+        if self.provider == "gemini":
             self.model = "gemini-1.5-flash"
         elif self.provider == "openai":
             self.model = "gpt-4o-mini"
@@ -90,19 +79,7 @@ class LLMClient:
                 )
                 return response.text
             
-            # Use native Groq if provider is Groq
-            if self.provider == "groq":
-                client = Groq(api_key=self.api_key)
-                response = client.chat.completions.create(
-                    model=target_model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=temperature,
-                    max_tokens=max_tokens
-                )
-                return response.choices[0].message.content
+
             
             # Use litellm for other providers
             model_string = target_model if "/" in target_model else f"{self.provider}/{target_model}"
