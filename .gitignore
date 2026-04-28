@@ -50,3 +50,15 @@ backend/add_mobile_column.py
 
 # OS
 Thumbs.db
+
+# Local / Legacy Files (kept locally, removed from repo)
+/*.md
+!/README.md
+!/LICENSE
+!/requirements.txt
+streamlit_app_legacy.py
+verify_enhancements.py
+frontend/lovable_import/
+frontend/fix_imports.py
+promote_admin.py
+backend/scripts/
