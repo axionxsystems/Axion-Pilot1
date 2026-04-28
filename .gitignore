@@ -3,6 +3,9 @@
 *.pem
 .idea/
 .vscode/
+brain/
+key.txt
+*.db
 
 # Node modules (anywhere in the repo)
 node_modules/
@@ -25,10 +28,11 @@ frontend/yarn-debug.log*
 frontend/yarn-error.log*
 
 # Backend (Python/FastAPI)
-backend/__pycache__/
-backend/**/__pycache__/
 backend/*.py[cod]
 backend/*$py.class
+**/__pycache__/
+*.py[cod]
+*$py.class
 backend/venv/
 backend/.venv/
 backend/env/

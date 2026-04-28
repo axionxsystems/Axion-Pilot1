@@ -1,3 +1,0 @@
-# API Keys removed for security
-
-# GEMINI_API_KEY=AIzaSyCnHo6WdoW0g_Pf7amrACdLvt6gcSAc2SE
