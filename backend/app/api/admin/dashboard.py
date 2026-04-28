@@ -1,233 +1,245 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 import os
 
 from app.database import get_db
 from app.models.user import User
-from app.models.project import Project
+from app.models.project import Project, ProjectContent
 from app.models.activity import Activity
-from app.models.settings import PlatformSettings, ProjectTemplate
+from app.models.settings import PlatformSettings
 from app.auth.dependencies import get_current_user
 
-router = APIRouter(tags=["Admin Dashboard"])
+router = APIRouter(tags=["Admin Control Panel"])
 
 _SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "").strip().lower()
 
-def check_admin(user: User):
-    is_super_admin = bool(_SUPER_ADMIN_EMAIL and user.email.lower() == _SUPER_ADMIN_EMAIL)
-    if not (is_super_admin or user.is_admin):
-        raise HTTPException(status_code=403, detail="Strict Access Denied. Admin privilege only.")
+def check_super_admin(user: User):
+    """Strictly enforces that only the super admin email can access these controls."""
+    if not (user.email.lower() == _SUPER_ADMIN_EMAIL):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Mission Critical Access Denied. Super Admin clearance required."
+        )
+
+# ── Analytics & Stats ──────────────────────────────────────────────────────────
 
 @router.get("/stats")
-async def get_platform_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    
-    total_users = db.query(User).count()
-    total_projects = db.query(Project).count()
-    
-    total_reports = db.query(Activity).filter(Activity.action_type == "REPORT_GEN").count()
-    total_presentations = db.query(Activity).filter(Activity.action_type == "PPT_GEN").count()
-    
-    return {
-        "total_users": total_users,
-        "total_projects": total_projects,
-        "total_reports": total_reports,
-        "total_presentations": total_presentations
-    }
-
-@router.get("/activity", response_model=Dict)
-async def get_recent_activity(
-    page: int = 1, 
-    size: int = 50, 
-    current_user: User = Depends(get_current_user), 
+async def get_analytics(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    check_admin(current_user)
-    skip = (page - 1) * size
-    total = db.query(Activity).count()
+    check_super_admin(current_user)
     
-    logs = db.query(Activity, User.email)\
-        .outerjoin(User, Activity.user_id == User.id)\
-        .order_by(Activity.created_at.desc())\
-        .offset(skip).limit(size).all()
+    total_users = db.query(User).count()
+    active_users = db.query(User).filter(User.is_active == True).count()
+    total_projects = db.query(Project).count()
     
-    result = []
-    for log, email in logs:
-        result.append({
-            "id": log.id,
-            "action_type": log.action_type,
-            "description": log.description,
-            "user_email": email or "System",
-            "created_at": log.created_at.isoformat() if log.created_at else datetime.utcnow().isoformat()
-        })
-        
+    # Calculate growth (simple simulation for now: projects in last 7 days)
+    last_week = datetime.utcnow() - timedelta(days=7)
+    recent_projects = db.query(Project).filter(Project.created_at >= last_week).count()
+    growth_pct = (recent_projects / (total_projects or 1)) * 100
+    
+    # Distribution data for charts
+    difficulty_stats = db.query(Project.difficulty, func.count(Project.id)).group_by(Project.difficulty).all()
+    domain_stats = db.query(Project.domain, func.count(Project.id)).group_by(Project.domain).all()
+    
     return {
-        "items": result,
-        "total": total,
-        "page": page,
-        "size": size,
-        "pages": (total + size - 1) // size
+        "counters": {
+            "total_users": total_users,
+            "active_users": active_users,
+            "total_projects": total_projects,
+            "growth_pct": round(growth_pct, 1)
+        },
+        "charts": {
+            "difficulty": [{"name": d, "value": c} for d, c in difficulty_stats],
+            "domains": [{"name": d, "value": c} for d, c in domain_stats]
+        }
     }
 
-@router.get("/charts/projects-per-day")
-async def get_projects_per_day(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
-    stats = db.query(
-        func.date(Project.created_at).label('date'),
-        func.count(Project.id).label('count')
-    ).filter(Project.created_at >= fourteen_days_ago).group_by(func.date(Project.created_at)).all()
-    return [{"date": str(s.date), "count": s.count} for s in stats]
+# ── User Management (ACCOUNTS) ────────────────────────────────────────────────
 
-@router.get("/charts/projects-per-domain")
-async def get_projects_per_domain(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    domain_stats = db.query(
-        Project.domain,
-        func.count(Project.id).label('count')
-    ).group_by(Project.domain).all()
-    return [{"domain": s.domain, "count": s.count} for s in domain_stats]
-
-@router.get("/charts/projects-per-difficulty")
-async def get_projects_per_difficulty(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    diff_stats = db.query(
-        Project.difficulty,
-        func.count(Project.id).label('count')
-    ).group_by(Project.difficulty).all()
-    return [{"difficulty": s.difficulty, "count": s.count} for s in diff_stats]
-
-@router.get("/users", response_model=List[Dict])
-async def list_users(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    users = db.query(
-        User,
-        func.count(Project.id).label("project_count")
-    ).outerjoin(Project, User.id == Project.user_id).group_by(User.id).all()
+@router.get("/users")
+async def list_users(
+    search: Optional[str] = None,
+    role: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
+    query = db.query(User)
     
-    return [{
-        "id": u.User.id,
-        "email": u.User.email,
-        "is_active": u.User.is_active,
-        "plan": u.User.plan,
-        "created_at": u.User.created_at.isoformat(),
-        "project_count": u.project_count,
-        "name": getattr(u.User, "name", None)
-    } for u in users]
+    if search:
+        query = query.filter(or_(User.email.contains(search), User.name.contains(search)))
+    if role:
+        query = query.filter(User.role == role)
+    if status:
+        is_active = status == "active"
+        query = query.filter(User.is_active == is_active)
+        
+    users = query.all()
+    result = []
+    for u in users:
+        # Get project count for each user
+        p_count = db.query(Project).filter(Project.user_id == u.id).count()
+        result.append({
+            "id": u.id,
+            "name": u.name,
+            "email": u.email,
+            "role": u.role,
+            "status": "active" if u.is_active else "suspended",
+            "signup_date": u.created_at,
+            "last_login": u.last_login,
+            "project_count": p_count
+        })
+    return result
 
-@router.post("/users/{user_id}/toggle-status")
-async def toggle_user_status(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
+@router.post("/users/{user_id}/status")
+async def update_user_status(
+    user_id: int,
+    status_data: Dict[str, str],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
     user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.email.lower() == _SUPER_ADMIN_EMAIL and _SUPER_ADMIN_EMAIL:
-        raise HTTPException(status_code=400, detail="Cannot suspend the super-admin")
-    user.is_active = not user.is_active
-    db.commit()
-    return {"message": f"User status updated to {'active' if user.is_active else 'suspended'}"}
-
-@router.delete("/users/{user_id}")
-async def delete_user(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.email.lower() == _SUPER_ADMIN_EMAIL and _SUPER_ADMIN_EMAIL:
-        raise HTTPException(status_code=400, detail="Cannot delete the super-admin")
-    db.delete(user)
-    db.commit()
-    return {"message": "User deleted successfully"}
-
-@router.get("/projects", response_model=List[Dict])
-async def list_all_projects(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) :
-    check_admin(current_user)
-    projects = db.query(
-        Project,
-        User.email.label("user_email")
-    ).join(User, Project.user_id == User.id).order_by(Project.created_at.desc()).all()
+    if not user: raise HTTPException(404, "User not found")
+    if user.email == _SUPER_ADMIN_EMAIL: raise HTTPException(400, "Cannot suspend super admin")
     
+    new_status = status_data.get("status")
+    user.is_active = (new_status == "active")
+    db.commit()
+    return {"message": f"User {new_status}"}
+
+@router.put("/users/{user_id}/role")
+async def update_user_role(
+    user_id: int,
+    role_data: Dict[str, str],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user: raise HTTPException(404, "User not found")
+    
+    new_role = role_data.get("role")
+    if new_role not in ["admin", "user", "moderator"]: raise HTTPException(400, "Invalid role")
+    user.role = new_role
+    user.is_admin = (new_role == "admin")
+    db.commit()
+    return {"message": f"Role updated to {new_role}"}
+
+# ── Project Management ────────────────────────────────────────────────────────
+
+@router.get("/projects")
+async def list_projects(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
+    projects = (
+        db.query(Project, User.email.label("owner_email"))
+        .join(User, Project.user_id == User.id)
+        .all()
+    )
     return [{
         "id": p.Project.id,
-        "title": p.Project.title,
-        "domain": p.Project.domain,
-        "difficulty": p.Project.difficulty,
-        "tech_stack": p.Project.tech_stack,
-        "user_email": p.user_email,
-        "created_at": p.Project.created_at.isoformat(),
-        "data": p.Project.data
+        "name": p.Project.title,
+        "owner_email": p.owner_email,
+        "description": p.Project.description,
+        "status": p.Project.status,
+        "progress": p.Project.progress,
+        "created_at": p.Project.created_at,
+        "deadline": p.Project.deadline
     } for p in projects]
+
+@router.patch("/projects/{project_id}")
+async def update_project(
+    project_id: int,
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project: raise HTTPException(404, "Project not found")
+    
+    for key, value in data.items():
+        if hasattr(project, key):
+            setattr(project, key, value)
+    db.commit()
+    return {"message": "Project updated"}
 
 @router.delete("/projects/{project_id}")
-async def admin_delete_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
+async def delete_project(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
     project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    if not project: raise HTTPException(404, "Project not found")
     db.delete(project)
     db.commit()
-    return {"message": "Project deleted successfully"}
+    return {"message": "Project deleted"}
 
-@router.get("/templates")
-async def list_templates(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    return db.query(ProjectTemplate).all()
+# ── Reports & PPTs ────────────────────────────────────────────────────────────
 
-@router.post("/templates")
-async def create_template(template_data: Dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    new_template = ProjectTemplate(
-        name=template_data.get("name"),
-        domain=template_data.get("domain"),
-        difficulty=template_data.get("difficulty"),
-        tech_stack=template_data.get("tech_stack"),
-        description=template_data.get("description")
+@router.get("/contents")
+async def list_contents(
+    content_type: str, # "report" or "presentation"
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
+    contents = (
+        db.query(ProjectContent, Project.title.label("project_title"), User.email.label("user_email"))
+        .join(Project, ProjectContent.project_id == Project.id)
+        .join(User, Project.user_id == User.id)
+        .filter(ProjectContent.type == content_type)
+        .all()
     )
-    db.add(new_template)
-    db.commit()
-    db.refresh(new_template)
-    return new_template
-
-@router.delete("/templates/{template_id}")
-async def delete_template(template_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    template = db.query(ProjectTemplate).filter(ProjectTemplate.id == template_id).first()
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    db.delete(template)
-    db.commit()
-    return {"message": "Template deleted successfully"}
-
-@router.get("/moderation/projects")
-async def get_moderation_projects(status: str = "active", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    projects = db.query(
-        Project,
-        User.email.label("user_email")
-    ).join(User, Project.user_id == User.id).filter(Project.status == status).order_by(Project.created_at.desc()).all()
-    
     return [{
-        "id": p.Project.id,
-        "title": p.Project.title,
-        "user_email": p.user_email,
-        "domain": p.Project.domain,
-        "difficulty": p.Project.difficulty,
-        "status": p.Project.status,
-        "created_at": p.Project.created_at.isoformat()
-    } for p in projects]
+        "id": c.ProjectContent.id,
+        "project_title": c.project_title,
+        "user_email": c.user_email,
+        "created_at": c.ProjectContent.created_at,
+        "type": c.ProjectContent.type
+    } for c in contents]
 
-@router.post("/moderation/projects/{project_id}/status")
-async def update_project_status(project_id: int, status_data: Dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    check_admin(current_user)
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    new_status = status_data.get("status")
-    if new_status not in ["active", "flagged", "low_quality", "approved", "deleted"]:
-        raise HTTPException(status_code=400, detail="Invalid status")
-    project.status = new_status
+# ── AI Config ─────────────────────────────────────────────────────────────────
+
+@router.get("/config")
+async def get_ai_config(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
+    config = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
+    if not config:
+        return {
+            "model": "gemini-1.5-flash",
+            "api_key": "••••••••••••••••",
+            "usage_limit": 1000,
+            "current_usage": 142
+        }
+    return config.setting_value
+
+@router.post("/config")
+async def update_ai_config(
+    data: Dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    check_super_admin(current_user)
+    config = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
+    if not config:
+        config = PlatformSettings(setting_key="AI_CONFIG", setting_value=data)
+        db.add(config)
+    else:
+        config.setting_value = data
     db.commit()
-    return {"message": f"Project status updated to {new_status}"}
+    return {"message": "Config updated"}

@@ -62,14 +62,7 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await loginStep2(email, otp);
-            // loginStep2 sets the token and calls refreshUser, which updates the user context.
-            // We need a brief moment for state to propagate, so we read the user directly.
-            const userData = await import("../../services/api").then(m => m.api.getMe());
-            if (userData.is_admin) {
-                router.push("/dashboard/admin");
-            } else {
-                router.push("/dashboard");
-            }
+            router.push("/dashboard");
         } catch (err: any) {
             setError(err.message || "Invalid or expired code.");
         } finally {
@@ -111,10 +104,10 @@ export default function LoginPage() {
 
                 <div className="glass p-8 rounded-3xl shadow-2xl border border-white/10 backdrop-blur-xl bg-card/60">
                     <div className="text-center mb-8">
-                        <h2 className="text-2xl font-bold tracking-tight">
-                            {isOtpStep ? "Security Verification" : "Welcome Back"}
+                        <h2 className="text-3xl font-bold tracking-tight text-white mb-2">
+                            {isOtpStep ? "Verification" : "Welcome Back"}
                         </h2>
-                        <p className="text-muted-foreground mt-2 text-sm">
+                        <p className="text-zinc-500 font-medium text-sm">
                             {isOtpStep 
                                 ? (successMessage || `A verification code was sent to ${email}`)
                                 : "Enter your credentials to access your workspace"
@@ -123,45 +116,45 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2 animate-in fade-in">
-                            <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-bold uppercase tracking-widest flex items-center gap-3 animate-in fade-in">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
                             {error}
                         </div>
                     )}
 
                     {!isOtpStep ? (
-                        <form onSubmit={handleStep1} className="space-y-5">
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Email</label>
+                        <form onSubmit={handleStep1} className="space-y-6">
+                            <div className="space-y-2.5">
+                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-1">Email</label>
                                 <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                        <Mail className="w-5 h-5" />
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-white transition-colors duration-500">
+                                        <Mail className="w-4 h-4" />
                                     </div>
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-secondary/50 border border-border rounded-xl py-3 pl-10 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all duration-200"
-                                        placeholder="name@example.com"
+                                        className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-12 pr-4 text-white focus:border-white/20 transition-all font-bold text-sm placeholder:text-zinc-800"
+                                        placeholder="name@gmail.com"
                                         required
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2.5">
                                 <div className="flex justify-between items-center px-1">
-                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</label>
-                                    <Link href="/forgot-password" title="Recover Password" className="text-xs text-primary hover:underline underline-offset-4">Forgot?</Link>
+                                    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px]">Password</label>
+                                    <Link href="/forgot-password" title="Recover Password" className="text-[10px] font-bold text-blue-500 hover:text-white uppercase tracking-widest transition-colors">Forgot?</Link>
                                 </div>
                                 <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                        <Lock className="w-5 h-5" />
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-white transition-colors duration-500">
+                                        <Lock className="w-4 h-4" />
                                     </div>
                                     <input
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-secondary/50 border border-border rounded-xl py-3 pl-10 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all duration-200"
+                                        className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-12 pr-4 text-white focus:border-white/20 transition-all font-bold text-sm placeholder:text-zinc-800"
                                         placeholder="••••••••"
                                         required
                                     />
@@ -171,11 +164,11 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full group relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-lg shadow-primary/25 disabled:opacity-50 mt-2"
+                                className="w-full group relative flex items-center justify-center gap-3 h-14 rounded-2xl bg-white text-black hover:bg-zinc-200 transition-all duration-500 shadow-apple disabled:opacity-50 font-bold text-[11px] uppercase tracking-[2px] mt-4"
                             >
                                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>
-                                    <span className="font-semibold">Sign In</span>
-                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    <span>Sign In</span>
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-500" />
                                 </>}
                             </button>
                         </form>

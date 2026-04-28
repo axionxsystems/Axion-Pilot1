@@ -54,11 +54,16 @@ class ProjectGenerateRequest(BaseModel):
 
 class ProjectFullResponse(BaseModel):
     id: int
-    userId: int = Field(..., alias="user_id")
-    topic: str
-    techStack: str = Field(..., alias="tech_stack")
-    complexity: str
-    createdAt: Any = Field(..., alias="created_at")
+    user_id: int
+    title: str
+    domain: str
+    difficulty: str
+    tech_stack: str
+    description: Optional[str] = None
+    status: str
+    progress: int
+    deadline: Optional[Any] = None
+    created_at: Any
 
     class Config:
         from_attributes = True

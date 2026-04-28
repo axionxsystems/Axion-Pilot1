@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api } from "../../../../services/api";
+import { api } from "@/services/api";
 import { 
     Eye, 
     Layers, 
@@ -24,8 +24,8 @@ import {
     Pencil
 } from "lucide-react";
 import Link from "next/link";
-import VivaAssistant from "../../../../components/VivaAssistant";
-import DownloadButton from "../../../../components/DownloadButton";
+import VivaAssistant from "@/components/VivaAssistant";
+import DownloadButton from "@/components/DownloadButton";
 import { cn } from "@/lib/utils";
 
 export default function ProjectDetailsPage() {

@@ -3,6 +3,8 @@
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import AuthGuard from "@/components/AuthGuard";
 
+import { usePathname } from "next/navigation";
+
 export default function DashboardLayout({
     children,
 }: {

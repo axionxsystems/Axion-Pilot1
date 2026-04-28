@@ -12,9 +12,11 @@ class User(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    role = Column(String, default="user") # admin, user, moderator
     plan = Column(String, default="free")
     mobile = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
     
     # [Security] Session revocation version. Default 1. Incremented on password change.
     token_version = Column(Integer, server_default="1", default=1, nullable=False)

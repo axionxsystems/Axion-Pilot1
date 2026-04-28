@@ -10,7 +10,7 @@ class Mailer:
     def __init__(self):
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 587
-        self.sender_name = "Axion Pilot" # Updated from AxionX for consistency
+        self.sender_name = "Axion Pilot"
 
     @property
     def email_user(self) -> str:
@@ -21,11 +21,29 @@ class Mailer:
     def email_pass(self) -> str:
         return os.environ.get("EMAIL_PASS") or ""
 
+    @property
+    def is_dev(self) -> bool:
+        return os.environ.get("ENV", "development") == "development"
+
+    def _log_otp_to_console(self, recipient_email: str, otp: str, purpose: str):
+        """Fallback: print OTP to console so developer is not blocked."""
+        separator = "=" * 50
+        logger.warning(f"\n{separator}\n[DEV MODE] OTP FOR: {recipient_email}\nPURPOSE: {purpose}\nCODE: {otp}\n{separator}\n")
+
     def send_otp(self, recipient_email: str, otp: str, purpose: str = "login"):
         """Sends an OTP email via Gmail SMTP with enhanced connectivity."""
-        if not self.email_user or not self.email_pass or "your_sender" in self.email_user:
-            logger.error(f"SMTP credentials missing. Cannot send OTP to {recipient_email}")
-            return False
+        
+        # Check if we are using placeholders
+        is_placeholder = not self.email_user or not self.email_pass or "your-email" in self.email_user or "your-app-password" in self.email_pass
+        
+        if is_placeholder:
+            if self.is_dev:
+                logger.info(f"Using placeholder SMTP credentials. Printing OTP to console.")
+                self._log_otp_to_console(recipient_email, otp, purpose)
+                return True
+            else:
+                logger.error(f"SMTP credentials missing in production. Cannot send OTP to {recipient_email}")
+                return False
 
         try:
             subject = f"Your {self.sender_name} {purpose.capitalize()} OTP"
@@ -68,14 +86,32 @@ class Mailer:
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Failed to send email to {recipient_email}: {error_msg}")
+            
+            if "(535," in error_msg and "Username and Password not accepted" in error_msg:
+                logger.warning("HINT: Gmail rejected your credentials. Ensure you are using an 'App Password' and not your main account password.")
+            
+            if self.is_dev:
+                logger.info("Falling back to console logging for development.")
+                self._log_otp_to_console(recipient_email, otp, purpose)
+                return True
+            
             return False
 
     def send_signup_otps(self, recipient_email: str, email_otp: str, mobile_otp: str):
         """Sends both Email and Mobile OTPs in a single welcome email."""
-        if not self.email_user or not self.email_pass or "your_sender" in self.email_user:
-            logger.error(f"SMTP credentials missing. Cannot send signup OTPs to {recipient_email}")
-            return False
+        # Use send_otp logic for placeholders
+        is_placeholder = not self.email_user or not self.email_pass or "your-email" in self.email_user or "your-app-password" in self.email_pass
+        
+        if is_placeholder:
+            if self.is_dev:
+                logger.info(f"Using placeholder SMTP credentials for signup. Printing OTPs to console.")
+                self._log_otp_to_console(recipient_email, f"EMAIL: {email_otp}, MOBILE: {mobile_otp}", "Signup Verification")
+                return True
+            else:
+                logger.error(f"SMTP credentials missing in production. Cannot send signup OTPs to {recipient_email}")
+                return False
 
         try:
             subject = f"Welcome to {self.sender_name} - Verify Your Account"
@@ -124,7 +160,14 @@ class Mailer:
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send signup email to {recipient_email}: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Failed to send signup email to {recipient_email}: {error_msg}")
+            
+            if self.is_dev:
+                logger.info("Falling back to console logging for development.")
+                self._log_otp_to_console(recipient_email, f"EMAIL: {email_otp}, MOBILE: {mobile_otp}", "Signup Verification")
+                return True
+                
             return False
 
 # Singleton instance

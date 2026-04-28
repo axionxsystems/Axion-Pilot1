@@ -59,7 +59,9 @@ class UserResponse(UserBase):
     is_active: bool
     plan: str
     is_admin: bool
+    role: str
     created_at: datetime
+    last_login: Optional[datetime] = None
     name: Optional[str] = None
     mobile: Optional[str] = None
     token_version: int

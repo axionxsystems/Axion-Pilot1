@@ -12,8 +12,11 @@ class Project(Base):
     domain = Column(String)
     difficulty = Column(String)
     tech_stack = Column(String)
+    description = Column(String, nullable=True)
     data = Column(JSON, nullable=True) # Full generation details json
-    status = Column(String, default="active") # active, flagged, low_quality, deleted
+    status = Column(String, default="active") # active, completed, pending, flagged, deleted
+    progress = Column(Integer, default=0) # 0-100
+    deadline = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

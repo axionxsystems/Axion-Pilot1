@@ -223,6 +223,14 @@ def login_step2(request: Request, data: LoginOTPVerify, db: Session = Depends(ge
         raise HTTPException(status_code=400, detail=f"Invalid code. {remaining} attempts remaining.")
 
     db.delete(v)
+
+    # Auto-elevate super-admin in case the flag was ever unset
+    if SUPER_ADMIN_EMAIL and email == SUPER_ADMIN_EMAIL and not user.is_admin:
+        user.is_admin = True
+    
+    # Update last login
+    user.last_login = datetime.utcnow()
+
     db.commit()
     access_token = create_access_token(data={"sub": user.email, "v": user.token_version})
     logger.info(f"[LOGIN] Successful login for {email}")

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { api, ProjectRequest } from "../services/api";
-import { Sparkles, Code2, BookOpen, Layers, Rocket, Loader2, AlignLeft, Layout } from "lucide-react";
+import { Sparkles, Code2, BookOpen, Layers, Rocket, Loader2, AlignLeft, Layout, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -82,46 +82,46 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
     };
 
     return (
-        <div className="space-y-8 animate-fade-in-up">
+        <div className="space-y-12 animate-in fade-in duration-1000 max-w-4xl mx-auto">
             {/* Template Selection */}
             {templates.length > 0 && (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                            <Sparkles className="w-3 h-3 text-primary" />
-                            Pick a Blueprint (Quick Start)
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <label className="text-[10px] font-bold uppercase tracking-[4px] text-zinc-600 flex items-center gap-4">
+                            <Sparkles className="w-3 h-3 text-blue-500" />
+                            Pre-configured Blueprints
                         </label>
                     </div>
-                    <div className="flex gap-4 overflow-x-auto pb-4 px-1 scrollbar-hide no-scrollbar">
+                    <div className="flex gap-6 overflow-x-auto pb-6 px-2 scrollbar-hide no-scrollbar">
                         {templates.map((t) => (
                             <button
                                 key={t.id}
                                 type="button"
                                 onClick={() => handleSelectTemplate(t)}
                                 className={cn(
-                                    "flex-shrink-0 w-64 p-5 rounded-3xl border text-left transition-all duration-300 group relative overflow-hidden",
+                                    "flex-shrink-0 w-72 p-8 rounded-[2.5rem] border text-left transition-all duration-500 group relative overflow-hidden",
                                     selectedTemplateId === t.id 
-                                        ? "bg-primary text-primary-foreground border-primary shadow-xl shadow-primary/20 -translate-y-1" 
-                                        : "bg-card border-border/50 hover:border-primary/50 text-foreground hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+                                        ? "apple-glass border-blue-500 shadow-apple scale-[1.02] bg-white/[0.05]" 
+                                        : "apple-card border-white/[0.05] hover:border-white/20 text-zinc-400 hover:text-white"
                                 )}
                             >
                                 <div className={cn(
-                                    "p-2.5 w-fit rounded-xl mb-4 transition-colors",
-                                    selectedTemplateId === t.id ? "bg-white/20" : "bg-primary/10 text-primary"
+                                    "p-3 w-fit rounded-2xl mb-6 transition-all duration-500 group-hover:scale-110",
+                                    selectedTemplateId === t.id ? "apple-glass text-white shadow-soft" : "apple-glass text-zinc-600 border-white/[0.05]"
                                 )}>
                                     <Layout className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-bold text-sm mb-1 line-clamp-1">{t.name}</h3>
+                                <h3 className="font-bold text-lg mb-2 line-clamp-1 tracking-tight text-white">{t.name}</h3>
                                 <p className={cn(
-                                    "text-[10px] font-black uppercase tracking-widest mb-3",
-                                    selectedTemplateId === t.id ? "text-white/70" : "text-primary/70"
+                                    "text-[9px] font-bold uppercase tracking-[2px] mb-4",
+                                    selectedTemplateId === t.id ? "text-blue-500" : "text-zinc-600"
                                 )}>
                                     {t.domain}
                                 </p>
                                 <div className="flex flex-wrap gap-2">
                                     <span className={cn(
-                                        "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter border",
-                                        selectedTemplateId === t.id ? "bg-white/10 border-white/20" : "bg-muted border-border/50"
+                                        "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border",
+                                        selectedTemplateId === t.id ? "bg-white/10 border-white/20 text-white" : "bg-white/5 border-white/[0.05] text-zinc-600"
                                     )}>
                                         {t.difficulty}
                                     </span>
@@ -132,179 +132,160 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                 </div>
             )}
 
-            <div className="bg-card border border-border/50 rounded-3xl p-8 shadow-sm">
-                <header className="mb-8">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Rocket className="w-5 h-5 text-primary" />
+            <div className="apple-card p-10 lg:p-16 relative overflow-hidden shadow-apple">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/[0.02] blur-[100px] -mr-32 -mt-32" />
+                
+                <header className="mb-12">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 rounded-[1.25rem] apple-glass flex items-center justify-center text-white shadow-soft">
+                            <Rocket className="w-6 h-6" />
                         </div>
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                            {selectedTemplateId ? "Customizing Blueprint" : "Manual Generation"}
+                        <h2 className="text-3xl font-bold tracking-tight text-white leading-none">
+                            {selectedTemplateId ? "Blueprint Parameters" : "Synthesis Configuration"}
                         </h2>
                     </div>
-                    <p className="text-muted-foreground text-sm ml-0 md:ml-[52px]">Select your preferences to build an AI project in seconds.</p>
+                    <p className="text-zinc-500 text-lg font-medium tracking-tight ml-0 lg:ml-16">Define the architectural constraints for your production asset.</p>
                 </header>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-10">
                     {/* Provider & API Key */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2 md:col-span-1">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">
-                                AI Engine
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                        <div className="space-y-3 md:col-span-4">
+                            <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
+                                Neural Engine
                             </label>
                             <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                    <Sparkles className="w-4 h-4" />
-                                </div>
                                 <select
                                     name="ai_provider"
                                     value={formData.ai_provider || "gemini"}
                                     onChange={handleChange}
-                                    className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 appearance-none cursor-pointer hover:bg-muted/30 transition-colors font-medium"
+                                    className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-6 pr-12 text-white focus:border-white/20 outline-none appearance-none cursor-pointer hover:bg-white/[0.05] transition-all font-bold text-[13px] tracking-tight"
                                 >
-                                    <option value="gemini">Standard Engine (Recommended)</option>
-                                    <option value="openai">OpenAI (ChatGPT)</option>
-                                    <option value="anthropic">Anthropic (Claude)</option>
-                                    <option value="xai">xAI (Grok)</option>
-
+                                    <option value="gemini" className="bg-black">Standard Synth</option>
+                                    <option value="openai" className="bg-black">OpenAI X-1</option>
+                                    <option value="anthropic" className="bg-black">Claude Prime</option>
+                                    <option value="xai" className="bg-black">Grok Logic</option>
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
+                                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 rotate-90 pointer-events-none" />
                             </div>
                         </div>
 
-                        <div className="space-y-2 md:col-span-2">
-                            <div className="flex justify-between items-center ml-1">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                    API Key (Optional)
+                        <div className="space-y-3 md:col-span-8">
+                            <div className="flex justify-between items-center px-2">
+                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px]">
+                                    Access Credential
                                 </label>
-                                <span className="text-[10px] text-primary/60 font-medium">Uses system default if empty</span>
+                                <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-widest">System Default Active</span>
                             </div>
-                            <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                    <Code2 className="w-4 h-4" />
-                                </div>
-                                <input
-                                    type="password"
-                                    name="auth_key"
-                                    autoComplete="off"
-                                    value={formData.api_key}
-                                    onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-                                    className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 font-mono"
-                                    placeholder={`Enter ${formData.ai_provider === 'openai' ? 'sk-...' : formData.ai_provider === 'anthropic' ? 'sk-ant-...' : formData.ai_provider === 'gemini' ? 'AIza...' : 'gsk_...'} key or leave empty`}
-                                />
-                            </div>
+                            <input
+                                type="password"
+                                name="auth_key"
+                                autoComplete="off"
+                                value={formData.api_key}
+                                onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+                                className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 px-6 text-white focus:border-white/20 transition-all font-mono text-[13px] placeholder:text-zinc-800"
+                                placeholder="Enter secure key or leave for system bypass"
+                            />
                         </div>
                     </div>
 
                     {/* Domain & Difficulty */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">
-                                Domain
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
+                                Sector Domain
                             </label>
                             <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                    <Layers className="w-4 h-4" />
-                                </div>
                                 <select
                                     name="domain"
                                     value={formData.domain}
                                     onChange={handleChange}
-                                    className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 appearance-none cursor-pointer hover:bg-muted/30 transition-colors"
+                                    className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-6 pr-12 text-white focus:border-white/20 outline-none appearance-none cursor-pointer hover:bg-white/[0.05] transition-all font-bold text-[13px] tracking-tight"
                                 >
                                     {domains.map((d) => (
-                                        <option key={d} value={d} className="bg-background text-foreground">{d}</option>
+                                        <option key={d} value={d} className="bg-black text-white">{d}</option>
                                     ))}
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
+                                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 rotate-90 pointer-events-none" />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">
-                                Difficulty
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
+                                Index Complexity
                             </label>
                             <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                    <BookOpen className="w-4 h-4" />
-                                </div>
                                 <select
                                     name="difficulty"
                                     value={formData.difficulty}
                                     onChange={handleChange}
-                                    className="w-full bg-background border border-border/50 rounded-xl py-3 pl-10 pr-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 appearance-none cursor-pointer hover:bg-muted/30 transition-colors"
+                                    className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-6 pr-12 text-white focus:border-white/20 outline-none appearance-none cursor-pointer hover:bg-white/[0.05] transition-all font-bold text-[13px] tracking-tight"
                                 >
                                     {difficulties.map((diff) => (
-                                        <option key={diff} value={diff} className="bg-background text-foreground">{diff}</option>
+                                        <option key={diff} value={diff} className="bg-black text-white">{diff}</option>
                                     ))}
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
+                                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 rotate-90 pointer-events-none" />
                             </div>
                         </div>
                     </div>
 
                     {/* Tech Stack & Topic */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">
-                                Tech Stack
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
+                                Implementation Stack
                             </label>
                             <input
                                 type="text"
                                 name="tech_stack"
                                 value={formData.tech_stack}
                                 onChange={handleChange}
-                                className="w-full bg-background border border-border/50 rounded-xl py-3 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200"
-                                placeholder="e.g. Next.js, FastAPI"
+                                className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 px-6 text-white focus:border-white/20 transition-all font-bold text-[13px] placeholder:text-zinc-800"
+                                placeholder="e.g. Next.js, Cloudflare, Supabase"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">
-                                Project Topic
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
+                                Logic Vector (Topic)
                             </label>
                             <input
                                 type="text"
                                 name="topic"
                                 value={formData.topic}
                                 onChange={handleChange}
-                                placeholder="e.g. Stock Prediction"
-                                className="w-full bg-background border border-border/50 rounded-xl py-3 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200"
+                                placeholder="e.g. Quantum Analytics Engine"
+                                className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 px-6 text-white focus:border-white/20 transition-all font-bold text-[13px] placeholder:text-zinc-800"
                             />
                         </div>
                     </div>
 
                     {/* Description */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-2">
-                            <AlignLeft className="w-3.5 h-3.5" />
-                            Project Description
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2 flex items-center gap-2">
+                            Structural Abstract
                         </label>
                         <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
-                            placeholder="Mention specific features or integration requirements..."
-                            rows={4}
-                            className="w-full bg-background border border-border/50 rounded-xl py-3 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 resize-none leading-relaxed"
+                            placeholder="Detail the core functional objectives and architectural constraints..."
+                            rows={5}
+                            className="w-full apple-glass border-white/[0.05] rounded-[2rem] py-6 px-8 text-white focus:border-white/20 transition-all resize-none leading-relaxed font-medium text-[14px] placeholder:text-zinc-800"
                         />
                     </div>
 
                     <Button 
                         type="submit" 
                         disabled={loading}
-                        className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20"
+                        size="xl"
+                        className="w-full h-16 rounded-[1.5rem] text-lg font-bold shadow-apple group/launch"
                     >
                         {loading ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            <Loader2 className="w-6 h-6 animate-spin mr-3" />
                         ) : (
-                            <Sparkles className="w-5 h-5 mr-2" />
+                            <Sparkles className="w-6 h-6 mr-3 transition-transform group-hover/launch:rotate-12" />
                         )}
-                        Generate Project
+                        {loading ? "Synthesizing Architecture..." : "Initiate System Synthesis"}
                     </Button>
                 </form>
             </div>

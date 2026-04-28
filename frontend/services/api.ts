@@ -234,6 +234,18 @@ export const api = {
         return response.json();
     },
 
+    regenerateProject: async (projectId: number, apiKey: string) => {
+        const response = await fetch(`${API_BASE_URL}/projects/${projectId}/regenerate?api_key=${apiKey}`, {
+            method: "POST",
+            headers: authHeaders(),
+        });
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || "Regeneration failed");
+        }
+        return response.json();
+    },
+
     // ── Viva ────────────────────────────────────────────────────────────────
     chatViva: async (apiKey: string, history: any[], projectData: any, aiProvider?: string) => {
         const response = await fetch(`${API_BASE_URL}/viva/ask`, {
@@ -292,154 +304,108 @@ export const api = {
 
     // ── Admin ───────────────────────────────────────────────────────────────
     getAdminStats: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/stats`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Admin stats failed");
-        return response.json();
+        const res = await fetch(`${API_BASE_URL}/admin/stats`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Admin stats failed");
+        return res.json();
     },
-
-    getAdminActivity: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/activity`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Admin activity failed");
-        return response.json();
+    getAdminActivity: async (page = 1, size = 50) => {
+        const res = await fetch(`${API_BASE_URL}/admin/activity?page=${page}&size=${size}`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Admin activity failed");
+        return res.json();
     },
-
-    adminListUsers: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/users`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch users");
-        return response.json();
-    },
-
-    adminToggleUserStatus: async (userId: number) => {
-        const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-status`, {
-            method: "POST",
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to update status");
-        return response.json();
-    },
-
-    adminDeleteUser: async (userId: number) => {
-        const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
-            method: "DELETE",
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to delete user");
-        return response.json();
-    },
-
-    adminListAllProjects: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/projects`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch all projects");
-        return response.json();
-    },
-
-    adminDeleteProject: async (projectId: number) => {
-        const response = await fetch(`${API_BASE_URL}/admin/projects/${projectId}`, {
-            method: "DELETE",
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to delete project");
-        return response.json();
-    },
-
-    adminListTemplates: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/templates`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch templates");
-        return response.json();
-    },
-
-    adminCreateTemplate: async (data: any) => {
-        const response = await fetch(`${API_BASE_URL}/admin/templates`, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify(data),
-        });
-        if (!response.ok) throw new Error("Failed to create template");
-        return response.json();
-    },
-
-    adminDeleteTemplate: async (templateId: number) => {
-        const response = await fetch(`${API_BASE_URL}/admin/templates/${templateId}`, {
-            method: "DELETE",
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to delete template");
-        return response.json();
-    },
-
-    getAdminAISettings: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/settings/ai`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch AI settings");
-        return response.json();
-    },
-
-    updateAdminAISettings: async (config: any) => {
-        const response = await fetch(`${API_BASE_URL}/admin/settings/ai`, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify(config),
-        });
-        if (!response.ok) throw new Error("Failed to update AI settings");
-        return response.json();
-    },
-
     getAdminChartProjectsPerDay: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-day`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch chart data");
-        return response.json();
+        const res = await fetch(`${API_BASE_URL}/admin/charts/projects-per-day`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Chart data failed");
+        return res.json();
     },
-
     getAdminChartProjectsPerDomain: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-domain`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch domain chart data");
-        return response.json();
+        const res = await fetch(`${API_BASE_URL}/admin/charts/projects-per-domain`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Domain chart failed");
+        return res.json();
     },
-
     getAdminChartProjectsPerDifficulty: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/charts/projects-per-difficulty`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch difficulty chart data");
-        return response.json();
+        const res = await fetch(`${API_BASE_URL}/admin/charts/projects-per-difficulty`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Difficulty chart failed");
+        return res.json();
     },
-
-    getAdminModerationProjects: async (status: string) => {
-        const response = await fetch(`${API_BASE_URL}/admin/moderation?status=${status}`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) throw new Error("Failed to fetch moderation projects");
-        return response.json();
+    adminListUsers: async (filters?: any) => {
+        let url = `${API_BASE_URL}/admin/users`;
+        if (filters) {
+            const params = new URLSearchParams(filters);
+            url += `?${params.toString()}`;
+        }
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch users");
+        return res.json();
     },
-
-    updateAdminProjectStatus: async (projectId: number, status: string) => {
-        const response = await fetch(`${API_BASE_URL}/admin/projects/${projectId}/status`, {
-            method: "PUT",
-            headers: authHeaders(),
-            body: JSON.stringify({ status }),
+    adminUpdateUserStatus: async (userId: number, status: string) => {
+        const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
+            method: "POST", headers: authHeaders(), body: JSON.stringify({ status }),
         });
-        if (!response.ok) throw new Error("Failed to update project status");
-        return response.json();
+        return res.json();
+    },
+    adminUpdateUserRole: async (userId: number, role: string) => {
+        const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/role`, {
+            method: "PUT", headers: authHeaders(), body: JSON.stringify({ role }),
+        });
+        return res.json();
+    },
+    adminDeleteUser: async (userId: number) => {
+        const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, { method: "DELETE", headers: authHeaders() });
+        if (!res.ok) throw new Error("Delete user failed");
+        return res.json();
+    },
+    adminListAllProjects: async () => {
+        const res = await fetch(`${API_BASE_URL}/admin/projects`, { headers: authHeaders() });
+        return res.json();
+    },
+    adminUpdateProject: async (projectId: number, data: any) => {
+        const res = await fetch(`${API_BASE_URL}/admin/projects/${projectId}`, {
+            method: "PATCH", headers: authHeaders(), body: JSON.stringify(data),
+        });
+        return res.json();
+    },
+    adminDeleteProject: async (projectId: number) => {
+        const res = await fetch(`${API_BASE_URL}/admin/projects/${projectId}`, {
+            method: "DELETE", headers: authHeaders()
+        });
+        return res.json();
+    },
+    adminListContents: async (type: string) => {
+        const res = await fetch(`${API_BASE_URL}/admin/contents?content_type=${type}`, { headers: authHeaders() });
+        return res.json();
+    },
+    adminGetConfig: async () => {
+        const res = await fetch(`${API_BASE_URL}/admin/config`, { headers: authHeaders() });
+        return res.json();
+    },
+    adminSaveConfig: async (data: any) => {
+        const res = await fetch(`${API_BASE_URL}/admin/config`, {
+            method: "POST", headers: authHeaders(), body: JSON.stringify(data),
+        });
+        return res.json();
+    },
+    adminListTemplates: async () => {
+        const res = await fetch(`${API_BASE_URL}/admin/templates`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Templates fetch failed");
+        return res.json();
+    },
+    adminCreateTemplate: async (data: any) => {
+        const res = await fetch(`${API_BASE_URL}/admin/templates`, {
+            method: "POST", headers: authHeaders(), body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error("Create template failed");
+        return res.json();
+    },
+    adminDeleteTemplate: async (templateId: number) => {
+        const res = await fetch(`${API_BASE_URL}/admin/templates/${templateId}`, { method: "DELETE", headers: authHeaders() });
+        if (!res.ok) throw new Error("Delete template failed");
+        return res.json();
     },
 
     getPublicTemplates: async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/templates/public`, {
+            const response = await fetch(`${API_BASE_URL}/projects/templates`, {
                 headers: authHeaders(),
             });
             if (!response.ok) return [];
@@ -447,43 +413,5 @@ export const api = {
         } catch {
             return [];
         }
-    },
-
-    // ── Admin Infrastructure ────────────────────────────────────────────────
-    getInfrastructureStatus: async () => {
-        const response = await fetch(`${API_BASE_URL}/admin/infrastructure/status`, {
-            headers: authHeaders(),
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || "Failed to fetch infrastructure status");
-        }
-        return response.json();
-    },
-
-    updateInfrastructureConfig: async (serviceId: string, config: any) => {
-        const response = await fetch(`${API_BASE_URL}/admin/infrastructure/config`, {
-            method: 'PUT',
-            headers: authHeaders(),
-            body: JSON.stringify({ service_id: serviceId, config }),
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || "Failed to update configuration");
-        }
-        return response.json();
-    },
-
-    rotateServiceKeys: async (serviceId: string) => {
-        const response = await fetch(`${API_BASE_URL}/admin/infrastructure/rotate`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ service_id: serviceId }),
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || "Rotation failed");
-        }
-        return response.json();
     },
 };

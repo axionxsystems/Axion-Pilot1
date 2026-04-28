@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
 from app.database import engine, Base
-from app.api import auth, users, projects, project, viva, admin, passkey
+from app.api import auth, users, projects, project, viva, passkey, admin
 from app.limiter import limiter
 
 # ── Logging ──────────────────────────────────────────────────────────────────

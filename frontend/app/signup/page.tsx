@@ -267,45 +267,45 @@ export default function SignupPage() {
                     ) : (
                         /* ── Form Step ── */
                         <>
-                            <div className="text-center mb-8 space-y-2">
-                                <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl border border-primary/20 mb-3">
-                                    <ShieldCheck className="w-7 h-7 text-primary" />
+                            <div className="text-center mb-12 space-y-4">
+                                <div className="inline-flex items-center justify-center w-16 h-16 apple-glass rounded-[1.5rem] shadow-apple mb-4 group">
+                                    <ShieldCheck className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform duration-700" />
                                 </div>
-                                <h1 className="text-2xl font-black tracking-tight text-foreground">Create Your Account</h1>
-                                <p className="text-sm text-muted-foreground">Join thousands of students building smarter projects</p>
+                                <h1 className="text-3xl font-bold tracking-tight text-white leading-none">Create Your Account</h1>
+                                <p className="text-zinc-500 font-medium text-lg tracking-tight">Join thousands of students building smarter projects</p>
                             </div>
 
                             {error && (
-                                <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3 animate-in fade-in duration-300">
+                                <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-bold uppercase tracking-widest flex items-center gap-3 animate-in fade-in duration-300">
                                     <XCircle className="w-4 h-4 flex-shrink-0" />{error}
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit} className="space-y-5">
+                            <form onSubmit={handleSubmit} className="space-y-6">
                                 <Field label="Full Name" icon={User} error={errors.name} touched={!!touched.name}>
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"><User className="w-4 h-4" /></div>
-                                    <input id="signup-name" type="text" value={fields.name} onChange={set("name")} onBlur={touch("name")} className={inputClass("name")} placeholder="John Doe" autoComplete="name" />
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none group-focus-within:text-white transition-colors"><User className="w-4 h-4" /></div>
+                                    <input id="signup-name" type="text" value={fields.name} onChange={set("name")} onBlur={touch("name")} className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-12 pr-12 text-white focus:border-white/20 transition-all font-bold text-sm placeholder:text-zinc-800" placeholder="John Doe" autoComplete="name" />
                                 </Field>
 
                                 <Field label="Gmail Address" icon={Mail} error={errors.email} touched={!!touched.email}>
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"><Mail className="w-4 h-4" /></div>
-                                    <input id="signup-email" type="email" value={fields.email} onChange={set("email")} onBlur={touch("email")} className={inputClass("email")} placeholder="name@gmail.com" autoComplete="email" />
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none group-focus-within:text-white transition-colors"><Mail className="w-4 h-4" /></div>
+                                    <input id="signup-email" type="email" value={fields.email} onChange={set("email")} onBlur={touch("email")} className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-12 pr-12 text-white focus:border-white/20 transition-all font-bold text-sm placeholder:text-zinc-800" placeholder="name@gmail.com" autoComplete="email" />
                                 </Field>
 
                                 {/* Mobile is optional */}
-                                <div className="space-y-1.5">
-                                    <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
-                                        <Phone className="w-3.5 h-3.5" />Mobile Number <span className="text-muted-foreground/40 normal-case font-normal">(optional)</span>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-1">
+                                        Mobile Number <span className="text-zinc-800 normal-case font-bold">(optional)</span>
                                     </label>
-                                    <div className="relative">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"><Phone className="w-4 h-4" /></div>
+                                    <div className="relative group">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-white transition-colors"><Phone className="w-4 h-4" /></div>
                                         <input
                                             id="signup-mobile"
                                             type="tel"
                                             value={fields.mobile}
                                             onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setFields(f => ({ ...f, mobile: v })); }}
-                                            className="w-full bg-secondary/50 border border-border rounded-xl py-3 pl-10 pr-4 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200 text-sm"
-                                            placeholder="10-digit number (optional)"
+                                            className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-12 pr-12 text-white focus:border-white/20 transition-all font-bold text-sm placeholder:text-zinc-800"
+                                            placeholder="10-digit number"
                                             maxLength={10}
                                         />
                                     </div>
