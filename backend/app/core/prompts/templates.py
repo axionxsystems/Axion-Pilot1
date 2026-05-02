@@ -3,173 +3,143 @@ PROJECT_STRUCTURE_PROMPT = """
 """
 
 # --- PIPELINE STAGE 1: IDEA EXPANSION ---
-IDEA_EXPANSION_PROMPT = """
-You are a Product Manager and Domain Expert. Expand the following project idea into a full-scale professional concept.
+IDEA_EXPANSION_PROMPT = """You are a Product Manager. Expand the project idea below into a professional concept.
+
 Domain: {domain}
 Topic: {topic}
-Original Description: {description}
+Description: {description}
 Difficulty: {difficulty}
 Level: {level}
 
-Expand this into:
-1. Detailed Project Overview (400+ words).
-2. Key Features (at least 8 professional features).
-3. Target Audience & Use Cases.
-4. Innovation & Unique Selling Points (USP).
-
-Output exactly in this JSON format:
+Return ONLY valid JSON with no extra text, no markdown fences, no explanation:
 {{
-    "expanded_title": "...",
-    "project_overview": "...",
-    "features": ["...", "..."],
-    "target_audience": "...",
-    "usps": ["...", "..."]
-}}
-"""
+    "expanded_title": "Full professional project title",
+    "project_overview": "Detailed 200+ word overview of what this project does, its purpose, and real-world applications",
+    "features": ["Feature 1 description", "Feature 2 description", "Feature 3 description", "Feature 4 description", "Feature 5 description", "Feature 6 description", "Feature 7 description", "Feature 8 description"],
+    "target_audience": "Who will use this project and why",
+    "usps": ["Unique selling point 1", "Unique selling point 2", "Unique selling point 3"]
+}}"""
 
 # --- PIPELINE STAGE 2: TECHNICAL ARCHITECTURE ---
-ARCHITECTURE_PLANNING_PROMPT = """
-As a Technical Architect, design a robust system architecture for:
+ARCHITECTURE_PLANNING_PROMPT = """You are a Software Architect. Design the system architecture for this project.
+
 Project: {title}
-Concept: {overview}
+Overview: {overview}
 Features: {features}
-Tech Stack preference: {tech_stack}
+Tech Stack: {tech_stack}
 
-Provide:
-1. Deep Architecture Description (Modules, Microservices/Components).
-2. Database Schema (detailed tables and relationships).
-3. Data Flow & System Logic.
-4. Security & Performance considerations.
-
-Output exactly in this JSON format:
+Return ONLY valid JSON with no extra text, no markdown fences, no explanation:
 {{
-    "system_architecture": "...",
-    "database_design": "...",
-    "logic_flow": "...",
-    "security_measures": "...",
+    "system_architecture": "Detailed 150+ word description of system components, modules and how they interact",
+    "database_design": "Description of database tables, relationships, and key fields",
+    "logic_flow": "Step-by-step description of how data flows from user request to response",
+    "security_measures": "Security implementations: authentication, authorization, input validation, encryption",
     "tech_stack_details": {{
-        "frontend": "...",
-        "backend": "...",
-        "database": "...",
-        "other": "..."
+        "frontend": "Frontend technology and key libraries",
+        "backend": "Backend framework and key libraries",
+        "database": "Database technology and ORM used",
+        "other": "Other tools, APIs, or services"
     }}
-}}
-"""
+}}"""
 
-# --- PIPELINE STAGE 3: CODEBASE GENERATION ---
-CODEBASE_GENERATION_PROMPT = """
-As a Senior Developer, generate a full, production-ready codebase structure and core implementation for:
+# --- PIPELINE STAGE 3: CODE GENERATION (Generic) ---
+CODEBASE_GENERATION_PROMPT = """You are a Senior Developer. Generate COMPLETE working source code for this project.
+
 Architecture: {architecture}
 Tech Stack: {tech_stack}
 
-REQUIREMENTS:
-1. Provide a professional codebase including the core logic, configuration, and a detailed README.
-2. The code must be production-ready with real logic, not placeholders.
-3. If the tech stack is Flask, you MUST follow this exact structure:
-   [project-name]/
-   ├── app.py (main Flask application)
-   ├── config.py (configuration settings)
-   ├── requirements.txt (all dependencies)
-   ├── models.py (database models using SQLAlchemy)
-   ├── routes.py (all API endpoints)
-   ├── templates/ (HTML files for web interface: base.html, index.html, create.html, edit.html, detail.html)
-   ├── static/ (CSS: css/style.css, JS: js/script.js)
-   ├── README.md (setup & usage instructions)
-   └── .env.example (environment variables template)
+Generate these files with REAL, COMPLETE, WORKING code. No placeholders. Each file must have full content.
 
-Output exactly in this JSON format:
+Return ONLY valid JSON with no extra text or markdown:
 {{
     "files": [
-        {{ "filename": "...", "content": "..." }},
-        ...
+        {{
+            "filename": "app.py",
+            "content": "# paste full working Python code here, not a placeholder"
+        }},
+        {{
+            "filename": "config.py",
+            "content": "# full config file"
+        }},
+        {{
+            "filename": "requirements.txt",
+            "content": "flask==2.3.3\nflask-sqlalchemy==3.1.1\npython-dotenv==1.0.0"
+        }},
+        {{
+            "filename": "README.md",
+            "content": "# Project Title\n\n## Setup\n1. pip install -r requirements.txt\n2. python app.py"
+        }}
     ]
-}}
-"""
+}}"""
 
-FLASK_CODEBASE_PROMPT = """
-You are an expert Python developer generating a complete, production-ready Flask web application.
+# --- PIPELINE STAGE 3b: FLASK CODE GENERATION ---
+FLASK_CODEBASE_PROMPT = """You are an expert Python Flask developer. Generate a COMPLETE working Flask web application.
 
-PROJECT CONTEXT:
-- Project Name: {title}
-- Description: {overview}
-- Difficulty Level: {difficulty}
-- Duration: 3-4 weeks for a student
+Project Name: {title}
+Description: {overview}
+Difficulty: {difficulty}
 
-REQUIREMENTS - GENERATE COMPLETE & WORKING CODE:
+Generate ALL of these files with complete, non-placeholder, working code:
+- app.py: Main Flask app with all routes and logic
+- models.py: SQLAlchemy database models
+- config.py: App configuration class
+- requirements.txt: All pip packages
+- templates/base.html: Base HTML with Bootstrap 5 CDN
+- templates/index.html: Home page listing all records
+- static/css/style.css: Custom CSS styles
+- README.md: Setup and run instructions
 
-1. PROJECT STRUCTURE:
-Create files in this exact structure:
-[project-name]/
-├── app.py (main Flask application)
-├── config.py (configuration settings)
-├── requirements.txt (all dependencies)
-├── models.py (database models using SQLAlchemy)
-├── routes.py (all API endpoints)
-├── templates/ (HTML files for web interface)
-│   ├── base.html
-│   ├── index.html
-│   ├── create.html
-│   ├── edit.html
-│   └── detail.html
-├── static/ (CSS, JS files)
-│   ├── css/
-│   │   └── style.css
-│   └── js/
-│       └── script.js
-├── README.md (setup & usage instructions)
-└── .env.example (environment variables template)
-
-Note: database.db should NOT be generated as a file, but your code should handle its creation.
-
-Generate the content for ALL these files. Ensure the logic is connected correctly (routes use models, app uses routes and config, etc.).
-
-Output exactly in this JSON format:
+Return ONLY valid JSON with no extra text outside the JSON:
 {{
     "files": [
-        {{ "filename": "...", "content": "..." }},
-        ...
+        {{
+            "filename": "app.py",
+            "content": "from flask import Flask, render_template, request, redirect, url_for\nfrom flask_sqlalchemy import SQLAlchemy\nfrom config import Config\n\napp = Flask(__name__)\napp.config.from_object(Config)\ndb = SQLAlchemy(app)\n\nfrom routes import *\n\nif __name__ == '__main__':\n    with app.app_context():\n        db.create_all()\n    app.run(debug=True)"
+        }},
+        {{
+            "filename": "requirements.txt",
+            "content": "flask==2.3.3\nflask-sqlalchemy==3.1.1\npython-dotenv==1.0.0"
+        }},
+        {{
+            "filename": "README.md",
+            "content": "# {title}\n\n## Description\n{overview}\n\n## Setup\n1. pip install -r requirements.txt\n2. python app.py\n3. Open http://localhost:5000"
+        }}
     ]
-}}
-"""
+}}"""
 
-# --- PIPELINE STAGE 4: DOCUMENTATION & REPORT ---
-DOCUMENTATION_PROMPT = """
-As an Academic Documentation Specialist, generate detailed report content for this project.
-Concept: {concept}
-Architecture: {architecture}
+# --- PIPELINE STAGE 4: DOCUMENTATION ---
+DOCUMENTATION_PROMPT = """You are an academic documentation expert. Write content for a project report.
 
-Generate:
-1. High-quality Abstract (300 words).
-2. Problem Statement.
-3. Literature Survey (Summarize 3 hypothetical research papers related to this).
-4. Methodology.
+Project Overview: {concept}
+System Architecture: {architecture}
 
-Output exactly in this JSON format:
+Return ONLY valid JSON with no extra text outside the JSON:
 {{
-    "abstract": "...",
-    "problem_statement": "...",
-    "literature_survey": "...",
-    "methodology": "..."
-}}
-"""
+    "abstract": "A professional 250-300 word abstract describing the project objectives, methodology, and expected outcomes suitable for academic submission",
+    "problem_statement": "A 150+ word problem statement explaining the need this project addresses, current limitations, and how this project solves them",
+    "literature_survey": "Review of 3 related technologies or papers. For each: name, relevance to project, and limitation that this project improves upon",
+    "methodology": "5-step methodology: 1. Requirements Analysis 2. System Design 3. Implementation 4. Testing 5. Deployment - with a sentence about each step"
+}}"""
 
 # --- PIPELINE STAGE 5: VIVA PREP ---
-VIVA_PREP_PROMPT = """
-As a Viva Examiner, generate 10 high-level "Advanced" questions and answers based on this project.
-Title: {title}
+VIVA_PREP_PROMPT = """You are a college examiner preparing viva questions. Generate 10 questions and detailed answers.
+
+Project: {title}
 Architecture: {architecture}
 Code Summary: {code_summary}
 
-Focus on:
-1. Implementation choices.
-2. Troubleshooting.
-3. Scaling the project.
-
-Output exactly in this JSON format:
+Return ONLY valid JSON with no extra text outside the JSON:
 {{
     "viva_questions": [
-        {{ "question": "...", "answer": "..." }},
-        ...
+        {{"question": "What is the main objective of your project?", "answer": "The main objective is to..."}},
+        {{"question": "What technology stack did you use and why did you choose it?", "answer": "We used..."}},
+        {{"question": "Explain your database schema and the relationships between tables.", "answer": "The database has..."}},
+        {{"question": "How did you implement user authentication and what security measures did you take?", "answer": "We implemented..."}},
+        {{"question": "What were the major challenges you faced and how did you overcome them?", "answer": "The major challenges were..."}},
+        {{"question": "Explain the complete flow of data from when a user submits a form to the database.", "answer": "When a user submits..."}},
+        {{"question": "How would you scale this application to support 10,000 users?", "answer": "To scale the application..."}},
+        {{"question": "What testing strategies did you use to validate the application?", "answer": "We tested using..."}},
+        {{"question": "If you could add one more feature, what would it be and why?", "answer": "I would add..."}},
+        {{"question": "How does your system handle errors, exceptions, and invalid user inputs?", "answer": "The system handles errors by..."}}
     ]
-}}
-"""
+}}"""
