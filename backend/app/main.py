@@ -5,14 +5,17 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import logging
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
+from app.utils.ollama_generator import generate_code, generate_documentation, generate_viva_questions
+
 from app.database import engine, Base
 from app.api import auth, users, projects, project, viva, passkey, admin
+from app.api import v1
 from app.limiter import limiter
 
 # ── Logging ──────────────────────────────────────────────────────────────────
@@ -92,6 +95,7 @@ app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(project.router, prefix="/project", tags=["Project Generation"])
 app.include_router(viva.router, prefix="/api/viva", tags=["Viva"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(v1.router, prefix="/api/v1")
 
 
 @app.get("/")
@@ -103,3 +107,69 @@ async def root():
 async def health():
     """Health check endpoint for auto-heal platform checks."""
     return {"status": "ok", "env": ENV}
+
+
+@app.post("/api/projects/ollama-generate", tags=["Ollama"])
+async def generate_project(
+    project_title: str = Body(...),
+    project_description: str = Body(...),
+    language: str = Body(...),
+    difficulty: str = Body(...)
+):
+    """
+    Main endpoint to generate complete project
+    
+    What this does:
+    1. Student submits project details via frontend
+    2. This function gets called
+    3. Generates code, docs, and viva questions
+    4. Returns everything as JSON
+    """
+    
+    try:
+        # STEP 1: Create prompt for code generation
+        code_prompt = f"""
+        Generate a complete, production-ready {language} project.
+        
+        Title: {project_title}
+        Description: {project_description}
+        Difficulty: {difficulty}
+        
+        Requirements:
+        - All code must be complete and functional
+        - Include all necessary files (config, dependencies, setup)
+        - Code must run immediately when student downloads it
+        - Include comments on complex parts
+        - Follow best practices for {language}
+        
+        Generate EVERY file needed, not just snippets.
+        """
+        
+        # STEP 2: Call Ollama to generate code
+        print(f"Generating code for {project_title}...")
+        code = generate_code(code_prompt)
+        
+        if code.startswith("Error"):
+            return {"error": code}
+        
+        # STEP 3: Generate documentation
+        print(f"Generating documentation...")
+        documentation = generate_documentation(code, project_title)
+        
+        # STEP 4: Generate viva questions
+        print(f"Generating viva questions...")
+        viva = generate_viva_questions(code, project_description)
+        
+        # STEP 5: Return everything
+        return {
+            "success": True,
+            "project_title": project_title,
+            "code": code,
+            "documentation": documentation,
+            "viva_questions": viva
+        }
+    
+    except Exception as e:
+        return {"error": f"Project generation failed: {str(e)}"}
+
+

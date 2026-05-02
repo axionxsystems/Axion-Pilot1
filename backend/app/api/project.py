@@ -32,9 +32,9 @@ def generate_project_api(
             request=payload
         )
         
-        # Step 2: Run Mock Generation Pipeline
+        # Step 2: Run AI Generation Pipeline
         # This stores content for each section: idea, architecture, modules, code, report, presentation, viva
-        db_contents = ProjectService.run_mock_pipeline(db, db_project)
+        db_contents = ProjectService.run_ai_pipeline(db, db_project)
         
         # Step 3: Format and return structured response
         return {

@@ -342,12 +342,20 @@ export const api = {
         const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
             method: "POST", headers: authHeaders(), body: JSON.stringify({ status }),
         });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Update status failed");
+        }
         return res.json();
     },
     adminUpdateUserRole: async (userId: number, role: string) => {
         const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/role`, {
             method: "PUT", headers: authHeaders(), body: JSON.stringify({ role }),
         });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Update role failed");
+        }
         return res.json();
     },
     adminDeleteUser: async (userId: number) => {
@@ -357,32 +365,44 @@ export const api = {
     },
     adminListAllProjects: async () => {
         const res = await fetch(`${API_BASE_URL}/admin/projects`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch projects");
         return res.json();
     },
     adminUpdateProject: async (projectId: number, data: any) => {
         const res = await fetch(`${API_BASE_URL}/admin/projects/${projectId}`, {
             method: "PATCH", headers: authHeaders(), body: JSON.stringify(data),
         });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Update project failed");
+        }
         return res.json();
     },
     adminDeleteProject: async (projectId: number) => {
         const res = await fetch(`${API_BASE_URL}/admin/projects/${projectId}`, {
             method: "DELETE", headers: authHeaders()
         });
+        if (!res.ok) throw new Error("Delete project failed");
         return res.json();
     },
     adminListContents: async (type: string) => {
         const res = await fetch(`${API_BASE_URL}/admin/contents?content_type=${type}`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch contents");
         return res.json();
     },
     adminGetConfig: async () => {
         const res = await fetch(`${API_BASE_URL}/admin/config`, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch config");
         return res.json();
     },
     adminSaveConfig: async (data: any) => {
         const res = await fetch(`${API_BASE_URL}/admin/config`, {
             method: "POST", headers: authHeaders(), body: JSON.stringify(data),
         });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Save config failed");
+        }
         return res.json();
     },
     adminListTemplates: async () => {

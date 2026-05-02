@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
+from app.utils.ollama_generator import OllamaGenerator
+
 logger = logging.getLogger(__name__)
 
 class LLMClient:
@@ -16,12 +18,20 @@ class LLMClient:
         self.api_key = api_key.strip() if api_key and len(api_key.strip()) > 10 else None
         self.provider = provider.strip().lower() if provider else ""
         
-        # Auto-detect API keys from environment if not provided
-        # PRIORITY: Gemini > Anthropic > OpenAI
+        # Auto-detect AI Provider and API Key
+        env_provider = os.getenv("AI_PROVIDER", "").strip().lower()
+        
+        if not self.provider:
+            self.provider = env_provider
+
+        # PRIORITY: 1. Explicit provider, 2. Ollama (if URL exists), 3. Gemini, 4. Others
         if not self.api_key:
-            # Try Gemini first (requested default)
-            self.api_key = os.getenv("GEMINI_API_KEY")
-            if self.api_key:
+            if self.provider == "ollama" or (not self.provider and os.getenv("OLLAMA_BASE_URL")):
+                self.provider = "ollama"
+                self.api_key = "local-ollama"
+                logger.debug("LLMClient: Using local Ollama as primary provider")
+            elif self.provider == "gemini" or (not self.provider and os.getenv("GEMINI_API_KEY")):
+                self.api_key = os.getenv("GEMINI_API_KEY")
                 self.provider = "gemini"
                 logger.debug("LLMClient: Loaded GEMINI_API_KEY from env")
             else:
@@ -30,34 +40,32 @@ class LLMClient:
                 if self.api_key:
                     if os.getenv("ANTHROPIC_API_KEY"):
                         self.provider = "anthropic"
-                        logger.debug("LLMClient: Loaded ANTHROPIC_API_KEY from env")
                     else:
                         self.provider = "openai"
-                        logger.debug("LLMClient: Loaded OPENAI_API_KEY from env")
+                elif os.getenv("OLLAMA_BASE_URL"): # Final fallback to Ollama
+                    self.provider = "ollama"
+                    self.api_key = "local-ollama"
                 else:
-                    logger.warning("LLMClient: No Gemini/Anthropic/OpenAI keys found")
+                    logger.warning("LLMClient: No AI keys or Ollama URL found")
         
-        # Auto-detect provider from API key format if provider not specified
-        if self.api_key and not self.provider:
-            if self.api_key.startswith("sk-ant"):
-                self.provider = "anthropic"
-            elif self.api_key.startswith("sk-") and "proj" in self.api_key:
-                self.provider = "openai"
-            elif self.api_key.startswith("AIza"):
-                self.provider = "gemini"
+        # Validation
+        if not self.api_key and self.provider != "ollama":
+            # If we still don't have a key and it's not ollama, try one last check for Ollama
+            if os.getenv("OLLAMA_BASE_URL"):
+                self.provider = "ollama"
+                self.api_key = "local-ollama"
             else:
-                self.provider = "gemini"  # default to Gemini
-        
-        if not self.api_key:
-            raise ValueError("API Key is required")
+                raise ValueError("AI API Key or Ollama configuration is required")
 
         # Set optimal models based on provider
         if self.provider == "gemini":
-            self.model = "gemini-1.5-flash"
+            self.model = "gemini-2.0-flash"
         elif self.provider == "openai":
             self.model = "gpt-4o-mini"
         elif self.provider == "anthropic":
             self.model = "claude-3-5-sonnet-20241022"
+        elif self.provider == "ollama":
+            self.model = os.getenv("OLLAMA_MODEL", "llama3")
         else:
             self.model = "default"
 
@@ -65,24 +73,17 @@ class LLMClient:
         try:
             target_model = model or self.model
             
-            # Use native Gemini SDK if provider is Gemini
-            if self.provider == "gemini":
-                client = genai.Client(api_key=self.api_key)
-                response = client.models.generate_content(
-                    model=target_model,
-                    contents=prompt,
-                    config=genai.types.GenerateContentConfig(
-                        system_instruction=system_prompt,
-                        temperature=temperature,
-                        max_output_tokens=max_tokens,
-                    )
-                )
-                return response.text
-            
+            # Use litellm for all providers (including gemini)
+            # litellm expects "gemini/gemini-1.5-flash"
+            if self.provider == "gemini" and "/" not in target_model:
+                model_string = f"gemini/{target_model}"
+            else:
+                model_string = target_model if "/" in target_model else f"{self.provider}/{target_model}"
 
-            
-            # Use litellm for other providers
-            model_string = target_model if "/" in target_model else f"{self.provider}/{target_model}"
+            if self.provider == "ollama":
+                gen = OllamaGenerator(model=target_model)
+                # OllamaGenerator.generate is synchronous
+                return gen.generate(prompt, system=system_prompt, options={"temperature": temperature})
 
             response = litellm.completion(
                 model=model_string,
@@ -100,6 +101,8 @@ class LLMClient:
             error_msg = str(e)
             if "invalid_api_key" in error_msg.lower() or "401" in error_msg or "api key" in error_msg.lower():
                 error_msg = f"The {self.provider.upper()} API key is invalid or has been revoked."
+            elif "leaked" in error_msg.lower():
+                error_msg = f"Your {self.provider.upper()} API key has been reported as leaked and disabled by Google. Please generate a new one at https://aistudio.google.com/ and update your .env file."
             elif "rate_limit" in error_msg.lower():
                 error_msg = f"The {self.provider.upper()} API rate limit was hit."
             

@@ -31,7 +31,7 @@ export function Sidebar({ className }: SidebarProps) {
     const baseLinks = [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "My Vault", href: "/dashboard/projects", icon: Layers },
-        { name: "Profile", href: "/dashboard/settings", icon: User },
+        { name: "Profile", href: "/dashboard/profile", icon: User },
         { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
         ...(user?.email === "niyant214@gmail.com" ? [
             { name: "Admin Hub", href: "/admin", icon: Shield }

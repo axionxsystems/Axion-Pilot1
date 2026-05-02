@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.activity import Activity
 from app.models.user import User
-from app.models.project import Project
+from app.models.project import Project, ProjectContent
 from app.auth.dependencies import get_current_user
 from sqlalchemy import func
 from app.schemas.project import ProjectRequest, ProjectResponse
@@ -83,6 +83,28 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
             extra_data={"domain": db_project.domain, "difficulty": db_project.difficulty}
         )
         db.add(log)
+        
+        # 6. POPULATE ProjectContent (for Admin dashboard visibility)
+        sections_map = {
+            "abstract": "idea",
+            "architecture_description": "architecture",
+            "files": "code",
+            "viva_questions": "viva"
+        }
+        
+        for key, content_type in sections_map.items():
+            if key in project_data:
+                db_content = ProjectContent(
+                    project_id=db_project.id,
+                    type=content_type,
+                    content=project_data[key]
+                )
+                db.add(db_content)
+        
+        # Add placeholders for report and ppt to show up in Admin
+        db.add(ProjectContent(project_id=db_project.id, type="report", content={"status": "available"}))
+        db.add(ProjectContent(project_id=db_project.id, type="presentation", content={"status": "available"}))
+
         db.commit()
         db.refresh(db_project)
         

@@ -36,6 +36,7 @@ async def get_analytics(
     total_users = db.query(User).count()
     active_users = db.query(User).filter(User.is_active == True).count()
     total_projects = db.query(Project).count()
+    total_viva_questions = db.query(ProjectContent).filter(ProjectContent.type == "viva").count()
     
     # Calculate growth (simple simulation for now: projects in last 7 days)
     last_week = datetime.utcnow() - timedelta(days=7)
@@ -51,11 +52,12 @@ async def get_analytics(
             "total_users": total_users,
             "active_users": active_users,
             "total_projects": total_projects,
+            "total_viva_questions": total_viva_questions,
             "growth_pct": round(growth_pct, 1)
         },
         "charts": {
-            "difficulty": [{"name": d, "value": c} for d, c in difficulty_stats],
-            "domains": [{"name": d, "value": c} for d, c in domain_stats]
+            "difficulty": [{"name": d or "Unknown", "value": c} for d, c in difficulty_stats],
+            "domains": [{"name": d or "Miscellaneous", "value": c} for d, c in domain_stats]
         }
     }
 
@@ -221,10 +223,11 @@ async def get_ai_config(
     config = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
     if not config:
         return {
-            "model": "gemini-1.5-flash",
-            "api_key": "••••••••••••••••",
-            "usage_limit": 1000,
-            "current_usage": 142
+            "model": os.getenv("OLLAMA_MODEL", "llama3"),
+            "provider": "ollama",
+            "api_key": "Local (Ollama)",
+            "usage_limit": "Unlimited",
+            "current_usage": 0
         }
     return config.setting_value
 

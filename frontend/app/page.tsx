@@ -276,7 +276,7 @@ export default function LandingPage() {
              <Link href="#" className="hover:text-foreground transition-colors">Security</Link>
           </div>
           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">
-             &copy; {new Date().getFullYear()} AxionX Systems
+             &copy; 2026 AxionX Systems
           </div>
         </div>
       </footer>

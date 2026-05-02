@@ -6,8 +6,6 @@ def get_viva_response(api_key, provider, history, project_data):
     """
     Generates a response for the assistant based on chat history and optional project context.
     """
-    if not api_key:
-        api_key = os.getenv("GEMINI_CHATBOT_KEY") or os.getenv("GEMINI_API_KEY")
     client = LLMClient(api_key=api_key, provider=provider)
     
     # Decide which system prompt to use

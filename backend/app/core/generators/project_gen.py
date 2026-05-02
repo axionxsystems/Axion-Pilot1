@@ -10,6 +10,7 @@ from ..prompts.templates import (
     IDEA_EXPANSION_PROMPT,
     ARCHITECTURE_PLANNING_PROMPT,
     CODEBASE_GENERATION_PROMPT,
+    FLASK_CODEBASE_PROMPT,
     DOCUMENTATION_PROMPT,
     VIVA_PREP_PROMPT
 )
@@ -36,8 +37,6 @@ def extract_json(text):
         return None
 
 def generate_project(api_key, provider, domain, topic, description, difficulty, tech_stack, level, ai_config=None):
-    if not api_key:
-        api_key = os.getenv("GEMINI_PROJECT_KEY") or os.getenv("GEMINI_API_KEY")
     client = LLMClient(api_key=api_key, provider=provider)
     
     # Extract AI Config
@@ -84,10 +83,20 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
     code_data = {"files": []}
     if features.get("deep_code"):
         logger.info("Pipeline Stage 3: Codebase Generation")
-        code_prompt = CODEBASE_GENERATION_PROMPT.format(
-            architecture=arch_data.get("system_architecture", "Standard Software Architecture"),
-            tech_stack=tech_stack
-        )
+        
+        # Select prompt based on tech stack
+        if "flask" in tech_stack.lower():
+            code_prompt = FLASK_CODEBASE_PROMPT.format(
+                title=title,
+                overview=overview,
+                difficulty=difficulty
+            )
+        else:
+            code_prompt = CODEBASE_GENERATION_PROMPT.format(
+                architecture=arch_data.get("system_architecture", "Standard Software Architecture"),
+                tech_stack=tech_stack
+            )
+            
         res_code = client.generate(code_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT, temperature=temp, max_tokens=tokens)
         code_data = extract_json(res_code) or {"files": []}
 
