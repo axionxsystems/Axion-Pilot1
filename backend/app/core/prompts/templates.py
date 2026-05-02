@@ -11,6 +11,10 @@ Description: {description}
 Difficulty: {difficulty}
 Level: {level}
 
+IMPORTANT: Tailor the complexity, scope, and technical depth of the expanded project to precisely match the specified "Level" and "Difficulty".
+- High Level/Difficulty: Enterprise-grade complexity, robust features, and advanced architecture.
+- Low Level/Difficulty: Simple, straightforward, beginner-friendly application.
+
 Return ONLY valid JSON with no extra text, no markdown fences, no explanation:
 {{
     "expanded_title": "Full professional project title",
@@ -47,6 +51,12 @@ CODEBASE_GENERATION_PROMPT = """You are a Senior Developer. Generate COMPLETE wo
 
 Architecture: {architecture}
 Tech Stack: {tech_stack}
+Difficulty: {difficulty}
+Level: {level}
+
+IMPORTANT: The complexity and quality of the generated code MUST reflect the specified "Difficulty" and "Level".
+- High Level/Difficulty: Advanced design patterns, robust error handling, security best practices, and modular architecture.
+- Low Level/Difficulty: Straightforward, simple to read, minimal viable code.
 
 Generate these files with REAL, COMPLETE, WORKING code. No placeholders. Each file must have full content.
 
@@ -78,6 +88,11 @@ FLASK_CODEBASE_PROMPT = """You are an expert Python Flask developer. Generate a 
 Project Name: {title}
 Description: {overview}
 Difficulty: {difficulty}
+Level: {level}
+
+IMPORTANT: The complexity and quality of the generated code MUST reflect the specified "Difficulty" and "Level".
+- High Level/Difficulty: Advanced design patterns, robust error handling, security best practices (e.g. CSRF, Validation), and a modular structure.
+- Low Level/Difficulty: Monolithic, simple, and easy-to-understand codebase suitable for beginners.
 
 Generate ALL of these files with complete, non-placeholder, working code:
 - app.py: Main Flask app with all routes and logic

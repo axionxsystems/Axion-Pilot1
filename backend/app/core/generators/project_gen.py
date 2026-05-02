@@ -335,12 +335,14 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
         logger.info("Pipeline Stage 3: Codebase Generation")
         if "flask" in tech_stack.lower():
             code_prompt = FLASK_CODEBASE_PROMPT.format(
-                title=title, overview=overview, difficulty=difficulty
+                title=title, overview=overview, difficulty=difficulty, level=level
             )
         else:
             code_prompt = CODEBASE_GENERATION_PROMPT.format(
                 architecture=arch_data.get("system_architecture", "Standard MVC Architecture"),
-                tech_stack=tech_stack
+                tech_stack=tech_stack,
+                difficulty=difficulty,
+                level=level
             )
 
         res_code = client.generate(code_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,

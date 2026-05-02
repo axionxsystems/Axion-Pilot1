@@ -21,7 +21,7 @@ import {
     Cpu
 } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "@/services/api";
 import { ActivityFeed, RecentProjectsList } from "@/components/dashboard/Widgets";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ export default function ProfilePage() {
     const { user } = useAuth();
     const [stats, setStats] = useState<any>(null);
     const [projects, setProjects] = useState<any[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
     // Modals
     const [editNameOpen, setEditNameOpen] = useState(false);
@@ -79,9 +80,21 @@ export default function ProfilePage() {
                                     {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
                                 </span>
                             </div>
-                            <button className="absolute bottom-2 right-2 p-3 rounded-2xl apple-glass text-white shadow-apple opacity-0 group-hover/avatar:opacity-100 transition-all z-20 hover:scale-110 active:scale-90">
+                            <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-2 right-2 p-3 rounded-2xl apple-glass text-white shadow-apple opacity-0 group-hover/avatar:opacity-100 transition-all z-20 hover:scale-110 active:scale-90">
                                 <Camera className="w-5 h-5" />
                             </button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                accept="image/*" 
+                                capture="user" 
+                                onChange={(e) => {
+                                    if (e.target.files?.[0]) {
+                                        alert("File selected: " + e.target.files[0].name + ". Server upload is pending implementation.");
+                                    }
+                                }} 
+                            />
                             <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-[3rem] blur-xl opacity-20 group-hover/avatar:opacity-40 transition-opacity" />
                         </div>
 
