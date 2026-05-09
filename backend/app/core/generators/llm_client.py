@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-from app.utils.ollama_generator import OllamaGenerator
+# from app.utils.ollama_generator import OllamaGenerator
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +25,19 @@ class LLMClient:
         if not self.provider:
             self.provider = env_provider
 
-        # PRIORITY: 1. Explicit provider, 2. Ollama (if URL exists), 3. Gemini, 4. Others
+        # PRIORITY: 1. Explicit provider, 2. Groq, 3. Gemini, 4. Others
         if not self.api_key:
-            if self.provider == "ollama" or (not self.provider and os.getenv("OLLAMA_BASE_URL")):
-                self.provider = "ollama"
-                self.api_key = "local-ollama"
-                logger.debug("LLMClient: Using local Ollama as primary provider")
+            if self.provider == "groq" or (not self.provider and os.getenv("GROQ_API_KEY")):
+                self.api_key = os.getenv("GROQ_API_KEY")
+                self.provider = "groq"
+                logger.debug("LLMClient: Loaded GROQ_API_KEY from env")
             elif self.provider == "gemini" or (not self.provider and os.getenv("GEMINI_API_KEY")):
                 self.api_key = os.getenv("GEMINI_API_KEY")
                 self.provider = "gemini"
                 logger.debug("LLMClient: Loaded GEMINI_API_KEY from env")
+            elif self.provider == "ollama":
+                self.api_key = "local-ollama"
+                logger.debug("LLMClient: Using local Ollama as requested")
             else:
                 # Fall back to other providers
                 self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -42,23 +46,25 @@ class LLMClient:
                         self.provider = "anthropic"
                     else:
                         self.provider = "openai"
-                elif os.getenv("OLLAMA_BASE_URL"): # Final fallback to Ollama
-                    self.provider = "ollama"
-                    self.api_key = "local-ollama"
+                # Final fallback to Ollama is removed as per user request to disable it
+                # elif os.getenv("OLLAMA_BASE_URL"): 
+                #     self.provider = "ollama"
+                #     self.api_key = "local-ollama"
                 else:
-                    logger.warning("LLMClient: No AI keys or Ollama URL found")
+                    logger.warning("LLMClient: No AI keys found")
         
         # Validation
-        if not self.api_key and self.provider != "ollama":
-            # If we still don't have a key and it's not ollama, try one last check for Ollama
-            if os.getenv("OLLAMA_BASE_URL"):
-                self.provider = "ollama"
-                self.api_key = "local-ollama"
-            else:
-                raise ValueError("AI API Key or Ollama configuration is required")
+        if not self.api_key:
+            # if self.provider != "ollama" and os.getenv("OLLAMA_BASE_URL"):
+            #     self.provider = "ollama"
+            #     self.api_key = "local-ollama"
+            # else:
+            raise ValueError("AI API Key is required. Please check your .env file.")
 
         # Set optimal models based on provider
-        if self.provider == "gemini":
+        if self.provider == "groq":
+            self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        elif self.provider == "gemini":
             self.model = "gemini-2.0-flash"
         elif self.provider == "openai":
             self.model = "gpt-4o-mini"
@@ -73,17 +79,19 @@ class LLMClient:
         try:
             target_model = model or self.model
             
-            # Use litellm for all providers (including gemini)
-            # litellm expects "gemini/gemini-1.5-flash"
+            # Use litellm for all providers (including gemini and groq)
             if self.provider == "gemini" and "/" not in target_model:
                 model_string = f"gemini/{target_model}"
+            elif self.provider == "groq" and "/" not in target_model:
+                model_string = f"groq/{target_model}"
             else:
                 model_string = target_model if "/" in target_model else f"{self.provider}/{target_model}"
 
             if self.provider == "ollama":
-                gen = OllamaGenerator(model=target_model)
-                # OllamaGenerator.generate is synchronous
-                return gen.generate(prompt, system=system_prompt, options={"temperature": temperature})
+                # Ollama is disabled but logic kept for reference/commenting out
+                # gen = OllamaGenerator(model=target_model)
+                # return gen.generate(prompt, system=system_prompt, options={"temperature": temperature})
+                raise RuntimeError("Ollama provider is currently disabled by user request.")
 
             response = litellm.completion(
                 model=model_string,
@@ -102,8 +110,9 @@ class LLMClient:
             if "invalid_api_key" in error_msg.lower() or "401" in error_msg or "api key" in error_msg.lower():
                 error_msg = f"The {self.provider.upper()} API key is invalid or has been revoked."
             elif "leaked" in error_msg.lower():
-                error_msg = f"Your {self.provider.upper()} API key has been reported as leaked and disabled by Google. Please generate a new one at https://aistudio.google.com/ and update your .env file."
+                error_msg = f"Your {self.provider.upper()} API key has been reported as leaked. Please update your .env file."
             elif "rate_limit" in error_msg.lower():
                 error_msg = f"The {self.provider.upper()} API rate limit was hit."
             
             raise RuntimeError(f"Generation failed ({self.provider}): {error_msg}")
+

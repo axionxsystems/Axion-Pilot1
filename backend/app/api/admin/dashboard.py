@@ -223,12 +223,13 @@ async def get_ai_config(
     config = db.query(PlatformSettings).filter(PlatformSettings.setting_key == "AI_CONFIG").first()
     if not config:
         return {
-            "model": os.getenv("OLLAMA_MODEL", "llama3"),
-            "provider": "ollama",
-            "api_key": "Local (Ollama)",
+            "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            "provider": "groq",
+            "api_key": "System Default (Groq)",
             "usage_limit": "Unlimited",
             "current_usage": 0
         }
+
     return config.setting_value
 
 @router.post("/config")

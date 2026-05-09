@@ -46,7 +46,7 @@ export function ChatBot() {
     }, [messages, loading]);
 
     const handleSend = async () => {
-        if (!input.trim() || !apiKey) return;
+        if (!input.trim()) return;
 
         const newMsg = { role: "user", content: input };
         setMessages(prev => [...prev, newMsg]);
@@ -55,9 +55,10 @@ export function ChatBot() {
 
         try {
             const history = [...messages, newMsg];
-            // Passing the provider explicitly as the user requested for chatbot
-            const res = await api.chatViva(apiKey || "", history, null, "gemini");
+            // Using Groq as the default provider for chatbot
+            const res = await api.chatViva(apiKey || "", history, null, "groq");
             setMessages(prev => [...prev, { role: "assistant", content: res.response }]);
+
         } catch (err: any) {
             setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Error: " + (err.message || "Failed to connect to AI service.") }]);
         } finally {
@@ -123,7 +124,7 @@ export function ChatBot() {
                             ref={scrollRef}
                             className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide scroll-smooth relative"
                         >
-                            {apiKey ? (
+                            {true ? (
                                 <>
                                     {messages.length === 0 && (
                                         <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-4 animate-in fade-in duration-1000">
@@ -195,39 +196,7 @@ export function ChatBot() {
                                         </div>
                                     )}
                                 </>
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-8">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full scale-150 animate-pulse" />
-                                        <div className="w-20 h-20 rounded-[2.5rem] bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 relative z-10 shadow-2xl backdrop-blur-xl">
-                                            <Key className="w-10 h-10" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <h4 className="text-2xl font-black text-white tracking-tighter">Secure Link Required</h4>
-                                        <p className="text-xs text-zinc-500 font-bold leading-relaxed uppercase tracking-widest max-w-[240px] mx-auto">Provide your API key to unlock the Assistant functions.</p>
-                                    </div>
-                                    <div className="w-full space-y-4">
-                                        <div className="relative group">
-                                            <input
-                                                id="chatbot-key-input"
-                                                type="password"
-                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-zinc-700 shadow-inner group-hover:border-orange-500/30"
-                                                placeholder="Enter your key..."
-                                                value={apiKey}
-                                                onChange={(e) => setApiKey(e.target.value)}
-                                            />
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black text-orange-500 uppercase tracking-widest opacity-50">Local Only</div>
-                                        </div>
-                                        <Button 
-                                            onClick={() => document.getElementById("chatbot-key-input")?.focus()}
-                                            className="w-full bg-white text-black hover:bg-zinc-200 h-12 rounded-2xl font-black text-[10px] tracking-[4px] uppercase transition-all shadow-2xl"
-                                        >
-                                            ACTIVATE ASSISTANT
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* Premium Input Area */}
@@ -236,15 +205,15 @@ export function ChatBot() {
                                 <div className="absolute inset-0 bg-primary/20 blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
                                 <input
                                     className="w-full bg-[rgba(255,255,255,0.02)] border border-white/10 text-white rounded-[1.5rem] pl-6 pr-16 py-4.5 text-sm focus:outline-none focus:border-primary/50 transition-all font-semibold placeholder:text-zinc-600 shadow-2xl relative z-10 backdrop-blur-xl"
-                                    placeholder={apiKey ? "Inquire anything..." : "Awaiting configuration..."}
+                                    placeholder={loading ? "Synthesizing..." : "Inquire anything..."}
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                    disabled={!apiKey || loading}
+                                    disabled={loading}
                                 />
                                 <button
                                     onClick={handleSend}
-                                    disabled={!input.trim() || loading || !apiKey}
+                                    disabled={!input.trim() || loading}
                                     className="absolute right-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[1rem] shadow-[0_10px_25px_-5px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95 disabled:opacity-0 transition-all z-20 flex items-center gap-2 group/btn"
                                 >
                                     <Send className="w-4.5 h-4.5 group-hover/btn:translate-x-0.5 transition-transform" />
