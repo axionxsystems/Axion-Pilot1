@@ -28,6 +28,8 @@ from app.models.user import User, LoginVerification, ForgotPasswordVerification
 from app.models.project import Project
 from app.models.activity import Activity
 from app.models.settings import PlatformSettings, ProjectTemplate
+# Multi-tenancy models
+from app.models.organization import Organization, Subscription, AuditLog  # noqa: F401
 
 target_metadata = Base.metadata
 

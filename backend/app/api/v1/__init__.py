@@ -6,6 +6,7 @@ from .webhooks import routes as webhooks
 from .api_keys import routes as api_keys
 from .analytics import routes as analytics
 from .templates import routes as templates
+from .billing import router as billing_router
 
 router = APIRouter()
 
@@ -16,3 +17,4 @@ router.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
 router.include_router(api_keys.router, prefix="/api_keys", tags=["API Keys"])
 router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 router.include_router(templates.router, prefix="/templates", tags=["Templates"])
+router.include_router(billing_router, prefix="/billing", tags=["Stripe Billing"])

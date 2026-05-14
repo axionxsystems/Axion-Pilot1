@@ -27,8 +27,20 @@ PLAN_LIMITS = {
     "enterprise": 9999
 }
 
-def _get_owned_project(db: Session, project_id: int, user_id: int) -> Project:
-    project = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
+def _get_owned_project(db: Session, project_id: int, user: User) -> Project:
+    """
+    Fetch a project owned by `user` that also belongs to the user's org.
+    Both checks run in ONE query — impossible to access another org's project
+    even if someone guesses a valid project_id.
+    """
+    q = db.query(Project).filter(
+        Project.id      == project_id,
+        Project.user_id == user.id,
+    )
+    # [Security] Narrow to org scope when user has an org
+    if user.org_id:
+        q = q.filter(Project.org_id == user.org_id)
+    project = q.first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found or access denied")
     return project
@@ -63,9 +75,10 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
             ai_config=config_data
         )
         
-        # 4. DB SAVE
+        # 4. DB SAVE — stamp both user_id and org_id
         db_project = Project(
             user_id=current_user.id,
+            org_id=current_user.org_id,   # ← multi-tenancy: always set org
             title=project_data.get("title", "Untitled Project"),
             domain=project_data.get("domain", request.domain),
             difficulty=project_data.get("difficulty", request.difficulty),
@@ -127,11 +140,14 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
 
 @router.get("/list", response_model=List[dict])
 async def get_projects(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Standard implementation... (Keeping as is but ensured verified)
-    projects = db.query(Project).filter(
+    q = db.query(Project).filter(
         Project.user_id == current_user.id,
-        Project.status != "deleted"
-    ).order_by(Project.created_at.desc()).all()
+        Project.status  != "deleted",
+    )
+    # [Security] Narrow to org when user belongs to one
+    if current_user.org_id:
+        q = q.filter(Project.org_id == current_user.org_id)
+    projects = q.order_by(Project.created_at.desc()).all()
     
     result = []
     for p in projects:
@@ -147,7 +163,7 @@ async def get_projects(current_user: User = Depends(get_current_user), db: Sessi
 
 @router.delete("/{project_id}")
 async def delete_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    project = _get_owned_project(db, project_id, current_user.id)
+    project = _get_owned_project(db, project_id, current_user)
     db.delete(project)
     db.commit()
     return {"message": "Project deleted successfully"}
@@ -156,7 +172,7 @@ async def delete_project(project_id: int, current_user: User = Depends(get_curre
 
 @router.get("/download/report/{project_id}")
 async def download_report(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    project = _get_owned_project(db, project_id, current_user.id)
+    project = _get_owned_project(db, project_id, current_user)
     buffer = generate_report(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="REPORT_GEN", description=f"Report downloaded: {project.title}")
@@ -170,7 +186,7 @@ async def download_report(project_id: int, current_user: User = Depends(get_curr
 
 @router.get("/download/ppt/{project_id}")
 async def download_ppt(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    project = _get_owned_project(db, project_id, current_user.id)
+    project = _get_owned_project(db, project_id, current_user)
     buffer = generate_ppt(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="PPT_GEN", description=f"PPT downloaded: {project.title}")
@@ -184,7 +200,7 @@ async def download_ppt(project_id: int, current_user: User = Depends(get_current
 
 @router.get("/download/code/{project_id}")
 async def download_code(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    project = _get_owned_project(db, project_id, current_user.id)
+    project = _get_owned_project(db, project_id, current_user)
     buffer = generate_code_zip(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="CODE_GEN", description=f"Code zip downloaded: {project.title}")
@@ -194,7 +210,7 @@ async def download_code(project_id: int, current_user: User = Depends(get_curren
 
 @router.get("/download/full/{project_id}")
 async def download_full_project(project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    project = _get_owned_project(db, project_id, current_user.id)
+    project = _get_owned_project(db, project_id, current_user)
     buffer = generate_full_zip(project.data or {})
     
     log = Activity(user_id=current_user.id, action_type="CODE_GEN", description=f"Full package downloaded: {project.title}")

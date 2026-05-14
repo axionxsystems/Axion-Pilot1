@@ -10,12 +10,13 @@ logger = logging.getLogger(__name__)
 
 class ProjectService:
     @staticmethod
-    def create_project_skeleton(db: Session, user_id: int, request: ProjectGenerateRequest):
+    def create_project_skeleton(db: Session, user_id: int, org_id: str, request: ProjectGenerateRequest):
         """
-        Initializes a new project in the database.
+        Initializes a new project in the database with org scoping.
         """
         db_project = Project(
             user_id=user_id,
+            org_id=org_id,   # [Multi-tenancy]
             title=request.topic,
             tech_stack=request.techStack,
             difficulty=request.complexity,
@@ -26,7 +27,7 @@ class ProjectService:
         db.commit()
         db.refresh(db_project)
         
-        logger.info(f"Project created: {db_project.id} for user {user_id}")
+        logger.info(f"Project created: {db_project.id} for user {user_id} in org {org_id}")
         return db_project
 
     @staticmethod
@@ -45,11 +46,14 @@ class ProjectService:
         return db_content
 
     @staticmethod
-    def get_project_full(db: Session, project_id: int, user_id: int):
+    def get_project_full(db: Session, project_id: int, user_id: int, org_id: str = None):
         """
-        Retrieves a project by ID ensuring it belongs to the user.
+        Retrieves a project by ID ensuring it belongs to the user and their org.
         """
-        return db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
+        query = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id)
+        if org_id:
+            query = query.filter(Project.org_id == org_id)
+        return query.first()
 
     @staticmethod
     def run_ai_pipeline(db: Session, db_project: Project):
@@ -129,23 +133,33 @@ class ProjectService:
             created_contents.append(db_content)
         
     @staticmethod
-    def list_projects(db: Session, user_id: int):
+    def list_projects(db: Session, user_id: int, org_id: str = None):
         """
-        Lists all active projects for a specific user.
+        Lists all active projects for a specific user, optionally scoped by org.
         """
-        return db.query(Project).filter(
+        query = db.query(Project).filter(
             Project.user_id == user_id,
             Project.status != "deleted"
-        ).order_by(Project.created_at.desc()).all()
+        )
+        if org_id:
+            query = query.filter(Project.org_id == org_id)
+        
+        return query.order_by(Project.created_at.desc()).all()
 
     @staticmethod
-    def get_user_stats(db: Session, user_id: int):
+    def get_user_stats(db: Session, user_id: int, org_id: str = None):
         """
-        Retrieves project and activity stats for a user.
+        Retrieves project and activity stats for a user, scoped by org.
         """
         from app.models.activity import Activity
         
-        project_count = db.query(Project).filter(Project.user_id == user_id).count()
+        project_query = db.query(Project).filter(Project.user_id == user_id)
+        if org_id:
+            project_query = project_query.filter(Project.org_id == org_id)
+        
+        project_count = project_query.count()
+        
+        # Activity is also org-scoped in a mature implementation, but for now we filter by user
         report_count = db.query(Activity).filter(
             Activity.user_id == user_id,
             Activity.action_type == "REPORT_GEN"
@@ -155,8 +169,8 @@ class ProjectService:
             Activity.action_type == "PPT_GEN"
         ).count()
         
-        # Calculate total viva questions
-        projects = db.query(Project).filter(Project.user_id == user_id).all()
+        # Calculate total viva questions across scoped projects
+        projects = project_query.all()
         viva_count = sum(len(p.data.get("viva_questions", [])) for p in projects if isinstance(p.data, dict))
 
         return {
@@ -167,11 +181,15 @@ class ProjectService:
         }
 
     @staticmethod
-    def delete_project(db: Session, project_id: int, user_id: int):
+    def delete_project(db: Session, project_id: int, user_id: int, org_id: str = None):
         """
-        Soft deletes or removes a project.
+        Soft deletes or removes a project with org scoping.
         """
-        project = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
+        query = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id)
+        if org_id:
+            query = query.filter(Project.org_id == org_id)
+        
+        project = query.first()
         if project:
             project.status = "deleted"
             db.commit()

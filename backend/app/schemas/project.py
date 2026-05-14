@@ -63,6 +63,7 @@ class ProjectFullResponse(BaseModel):
     status: str
     progress: int
     deadline: Optional[Any] = None
+    org_id: Optional[str] = None
     created_at: Any
 
     class Config:

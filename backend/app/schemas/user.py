@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, constr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 import re
@@ -10,7 +10,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    full_name: constr(min_length=2, max_length=50)
+    full_name: str = Field(..., min_length=2, max_length=50)
     mobile: Optional[str] = None  # Mobile is now optional
 
     @field_validator("password")
@@ -64,6 +64,8 @@ class UserResponse(UserBase):
     last_login: Optional[datetime] = None
     name: Optional[str] = None
     mobile: Optional[str] = None
+    org_id: Optional[str] = None
+    org_role: Optional[str] = None
     token_version: int
 
     class Config:
@@ -89,3 +91,4 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
     v: Optional[int] = 1  # token version
+    org_id: Optional[str] = None

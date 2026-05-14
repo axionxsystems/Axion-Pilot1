@@ -232,7 +232,10 @@ def login_step2(request: Request, data: LoginOTPVerify, db: Session = Depends(ge
     user.last_login = datetime.utcnow()
 
     db.commit()
-    access_token = create_access_token(data={"sub": user.email, "v": user.token_version})
+    access_token = create_access_token(
+        data={"sub": user.email, "v": user.token_version},
+        org_id=user.org_id,   # ← multi-tenancy: embed org claim in JWT
+    )
     logger.info(f"[LOGIN] Successful login for {email}")
     return {"access_token": access_token, "token_type": "bearer"}
 

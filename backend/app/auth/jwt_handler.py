@@ -18,12 +18,26 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Issue a new JWT. Includes 'v' for token version (revocation check)."""
+def create_access_token(
+    data: dict,
+    expires_delta: Optional[timedelta] = None,
+    org_id: Optional[str] = None,
+) -> str:
+    """
+    Issue a new JWT.
+    Claims included:
+      - sub       : user email
+      - v         : token_version (revocation)
+      - org_id    : organization UUID (multi-tenancy) — None for users without an org
+      - exp       : expiry timestamp
+    """
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    # v = token_version, used for instant revocation on password change
-    to_encode.update({"exp": expire, "v": to_encode.get("v", 1)})
+    to_encode.update({
+        "exp":    expire,
+        "v":      to_encode.get("v", 1),
+        "org_id": org_id,           # None is serialised as JSON null (safe)
+    })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 

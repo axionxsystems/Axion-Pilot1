@@ -18,6 +18,13 @@ from app.database import engine, Base
 from app.api import auth, users, projects, project, viva, passkey, admin
 from app.api import v1
 from app.limiter import limiter
+from app.middleware.tenant import TenantMiddleware
+
+# ── Ensure all models are imported so create_all sees them ────────────────────
+import app.models.organization  # noqa: F401 — registers Organization, Subscription, AuditLog
+import app.models.stripe_billing  # noqa: F401 — registers Stripe billing models
+import app.models.api_key  # noqa: F401 — registers APIKey model
+import app.models.rate_limit  # noqa: F401 — registers RateLimitLog model
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -87,6 +94,15 @@ app.add_middleware(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SecurityHeadersMiddleware)
+
+# TenantMiddleware: extracts org_id from JWT and stores in context var.
+# Registered AFTER SecurityHeaders so it runs on the inner side of the stack.
+_JWT_SECRET = os.environ.get("SECRET_KEY", "")
+app.add_middleware(TenantMiddleware, secret_key=_JWT_SECRET)
+
+# RateLimitMiddleware: enforces rate limits for API keys
+from app.middleware.rate_limiting import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])

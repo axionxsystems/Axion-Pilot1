@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, JSON, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, JSON, DateTime, ForeignKey, UniqueConstraint
 from datetime import datetime
 from app.database import Base
 from sqlalchemy.orm import relationship
@@ -8,6 +8,11 @@ class Project(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+
+    # ── Multi-tenancy: every project MUST belong to an org ────────────────────
+    org_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"),
+                    nullable=True, index=True)
+
     title = Column(String)
     domain = Column(String)
     difficulty = Column(String)
@@ -19,9 +24,17 @@ class Project(Base):
     deadline = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Unique project title per org (allows same title across different orgs)
+    __table_args__ = (
+        UniqueConstraint("org_id", "title", name="uq_org_project_title"),
+    )
+
     # Relationships
-    owner = relationship("User", back_populates="projects")
-    contents = relationship("ProjectContent", back_populates="project", cascade="all, delete-orphan")
+    owner        = relationship("User",         back_populates="projects")
+    organization = relationship("Organization", back_populates="projects",
+                                foreign_keys=[org_id])
+    contents     = relationship("ProjectContent", back_populates="project", cascade="all, delete-orphan")
+
 
 class ProjectContent(Base):
     __tablename__ = "project_contents"

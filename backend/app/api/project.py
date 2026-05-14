@@ -29,6 +29,7 @@ def generate_project_api(
         db_project = ProjectService.create_project_skeleton(
             db=db, 
             user_id=current_user.id, 
+            org_id=current_user.org_id,
             request=payload
         )
         
