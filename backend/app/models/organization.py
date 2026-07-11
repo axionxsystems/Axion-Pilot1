@@ -89,6 +89,8 @@ class Organization(Base):
                                  cascade="all, delete-orphan")
     api_keys      = relationship("APIKey",       back_populates="organization",
                                  cascade="all, delete-orphan", foreign_keys="APIKey.org_id")
+    branding      = relationship("OrgBranding",  back_populates="organization",
+                                 cascade="all, delete-orphan", uselist=False)
 
 
 # ── Subscription ──────────────────────────────────────────────────────────────

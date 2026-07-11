@@ -279,11 +279,16 @@ async def handle_invoice_payment_succeeded(db: Session, event_data: Dict[str, An
     
     try:
         invoice = StripeInvoiceService.save_invoice(db, event_data)
-        
-        # TODO: Send confirmation email to customer
-        # TODO: Update accounting system
-        # TODO: Log to audit trail
-        
+
+        if invoice:
+            recipient = invoice.customer.email if invoice.customer else None
+            if recipient:
+                sent = StripeInvoiceService.send_invoice_email(db, invoice, recipient)
+                if not sent:
+                    logger.warning(f"Failed to send payment receipt email for invoice {invoice.id}")
+            else:
+                logger.warning(f"No customer email available for invoice {invoice.id}")
+
     except Exception as e:
         logger.error(f"Error handling invoice payment: {e}")
 

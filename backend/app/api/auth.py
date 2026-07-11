@@ -6,6 +6,7 @@ import string
 import unicodedata
 from datetime import datetime, timedelta
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -13,8 +14,12 @@ from app.auth.mailer import mailer
 
 from app.auth.jwt_handler import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.auth.utils import get_password_hash, verify_password
+from app.auth.saml import SAMLAuth
+from app.auth.saml_settings import get_saml_settings
 from app.database import get_db
 from app.models.activity import Activity
+from app.models.organization import AuditLog
+from app.models.sso import SSOConfig, SSOSession
 from app.models.user import ForgotPasswordVerification, LoginVerification, SignupVerification, User
 from app.schemas.user import (
     ForgotPasswordRequest,
@@ -168,7 +173,7 @@ def login_step1(request: Request, background_tasks: BackgroundTasks, form_data: 
     user = db.query(User).filter(User.email == email).first()
 
     # Timing-safe failure
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not user.hashed_password or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password.")
 
     if not user.is_active:
@@ -238,6 +243,173 @@ def login_step2(request: Request, data: LoginOTPVerify, db: Session = Depends(ge
     )
     logger.info(f"[LOGIN] Successful login for {email}")
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/saml/login")
+async def saml_login(org_id: str, db: Session = Depends(get_db)):
+    """Initiate SAML login flow for an organization."""
+    sso_config = db.query(SSOConfig).filter(SSOConfig.org_id == org_id).first()
+    if not sso_config or sso_config.sso_method != "saml":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="SAML not configured")
+
+    saml_auth = SAMLAuth(get_saml_settings(org_id))
+    request_id, login_url = saml_auth.get_login_url()
+
+    session = SSOSession(
+        org_id=org_id,
+        sso_method="saml",
+        state=request_id or secrets.token_urlsafe(32),
+        nonce=secrets.token_urlsafe(32),
+        expires_at=datetime.utcnow() + timedelta(minutes=15),
+    )
+    db.add(session)
+    db.commit()
+
+    return {"redirect_url": login_url}
+
+
+@router.post("/saml/callback")
+async def saml_callback(org_id: str, request: Request, db: Session = Depends(get_db)):
+    """Handle SAML assertion from Auth0."""
+    form = await request.form()
+    saml_response = form.get("SAMLResponse")
+    relay_state = form.get("RelayState")
+
+    if not saml_response:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing SAMLResponse")
+
+    session = (
+        db.query(SSOSession)
+        .filter(SSOSession.state == relay_state, SSOSession.org_id == org_id)
+        .first()
+    )
+    if not session or session.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired SAML state")
+
+    sso_config = db.query(SSOConfig).filter(SSOConfig.org_id == org_id).first()
+    if not sso_config or sso_config.sso_method != "saml":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="SAML not configured")
+
+    saml_auth = SAMLAuth(get_saml_settings(org_id))
+    try:
+        user_data = saml_auth.process_response(saml_response, relay_state)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+
+    if sso_config.allowed_domains:
+        email_domain = user_data["email"].split("@", 1)[-1].lower()
+        allowed = [d.lower() for d in sso_config.allowed_domains or []]
+        if email_domain not in allowed:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email domain not allowed")
+
+    user = db.query(User).filter(User.email == user_data["email"]).first()
+    if not user:
+        if not sso_config.auto_provision:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User does not exist")
+
+        user = User(
+            org_id=org_id,
+            email=user_data["email"],
+            name=f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip(),
+            first_name=user_data.get("first_name", ""),
+            last_name=user_data.get("last_name", ""),
+            auth_method="saml",
+            hashed_password=None,
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    access_token = create_access_token(
+        data={"sub": user.email, "v": user.token_version, "method": "saml"},
+        org_id=org_id,
+    )
+
+    audit_log = AuditLog(
+        org_id=org_id,
+        actor_id=user.id,
+        action="sso_login",
+        resource_type="user",
+        resource_id=str(user.id),
+        changes={"method": "saml"},
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return {"access_token": access_token, "user_id": str(user.id)}
+
+
+@router.post("/oauth/callback")
+async def oauth_callback(code: str, state: str, org_id: str, db: Session = Depends(get_db)):
+    """Handle OAuth2 callback from Auth0."""
+    sso_config = db.query(SSOConfig).filter(SSOConfig.org_id == org_id).first()
+    if not sso_config or sso_config.sso_method != "oauth2":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth2 not configured")
+
+    session = db.query(SSOSession).filter(SSOSession.state == state, SSOSession.org_id == org_id).first()
+    if not session or session.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid state")
+
+    token_url = f"https://{os.getenv('AUTH0_DOMAIN')}/oauth/token"
+    payload = {
+        "client_id": os.getenv("AUTH0_CLIENT_ID"),
+        "client_secret": os.getenv("AUTH0_CLIENT_SECRET"),
+        "code": code,
+        "redirect_uri": f"{os.getenv('AUTH0_OAUTH_CALLBACK_URL')}?org_id={org_id}",
+        "grant_type": "authorization_code",
+    }
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(token_url, json=payload, timeout=20.0)
+        token_data = resp.json()
+        if resp.status_code != 200 or "access_token" not in token_data:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to exchange OAuth2 code")
+
+        user_info_url = f"https://{os.getenv('AUTH0_DOMAIN')}/userinfo"
+        user_resp = await client.get(
+            user_info_url,
+            headers={"Authorization": f"Bearer {token_data['access_token']}"},
+            timeout=20.0,
+        )
+        user_info = user_resp.json()
+
+    user = db.query(User).filter(User.email == user_info.get("email", "")).first()
+    if not user:
+        if not sso_config.auto_provision:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User does not exist")
+
+        user = User(
+            org_id=org_id,
+            email=user_info.get("email", ""),
+            name=f"{user_info.get('given_name', '')} {user_info.get('family_name', '')}".strip(),
+            first_name=user_info.get("given_name", ""),
+            last_name=user_info.get("family_name", ""),
+            auth_method="oauth2",
+            hashed_password=None,
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    jwt_token = create_access_token(
+        data={"sub": user.email, "v": user.token_version, "method": "oauth2"},
+        org_id=org_id,
+    )
+
+    audit_log = AuditLog(
+        org_id=org_id,
+        actor_id=user.id,
+        action="sso_login",
+        resource_type="user",
+        resource_id=str(user.id),
+        changes={"method": "oauth2"},
+    )
+    db.add(audit_log)
+    db.commit()
+
+    return {"access_token": jwt_token, "user_id": str(user.id)}
 
 
 # ── Forgot Password ───────────────────────────────────────────────────────────

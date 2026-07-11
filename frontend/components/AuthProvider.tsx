@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, User } from "../services/api";
+import { api, Branding, User } from "../services/api";
 
 interface AuthContextType {
     user: User | null;
+    branding: Branding | null;
     loading: boolean;
     loginStep1: (email: string, password: string) => Promise<{ requires_otp: boolean; message?: string }>;
     loginStep2: (email: string, otp: string) => Promise<void>;
@@ -20,13 +21,36 @@ const AuthContext = createContext<AuthContextType>({} as any);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
+    const [branding, setBranding] = useState<Branding | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+
+    const updateBrandingStyles = (brandingData: Branding | null) => {
+        if (typeof window === "undefined") return;
+        const root = document.documentElement.style;
+        root.setProperty("--brand-primary", brandingData?.primary_color || "#2563eb");
+        root.setProperty("--brand-secondary", brandingData?.secondary_color || "#9333ea");
+        root.setProperty("--brand-accent", brandingData?.accent_color || "#f97316");
+    };
 
     const refreshUser = async () => {
         try {
             const userData = await api.getMe();
             setUser(userData);
+            if (userData.org_id) {
+                try {
+                    const brandingData = await api.getOrgBranding(userData.org_id);
+                    setBranding(brandingData);
+                    updateBrandingStyles(brandingData);
+                } catch (err) {
+                    console.warn("Unable to load org branding", err);
+                    setBranding(null);
+                    updateBrandingStyles(null);
+                }
+            } else {
+                setBranding(null);
+                updateBrandingStyles(null);
+            }
         } catch (e) {
             logout();
         }
@@ -74,7 +98,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider value={{ 
-            user, 
+            user,
+            branding,
             loading, 
             loginStep1, 
             loginStep2, 

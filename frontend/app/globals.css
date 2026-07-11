@@ -37,6 +37,9 @@
     --input: 240 5% 12%;
     --ring: 210 100% 50%;
     --radius: 1.25rem; /* Large, modern rounding */
+    --brand-primary: #2563eb;
+    --brand-secondary: #9333ea;
+    --brand-accent: #f97316;
 
     /* Motion Tokens */
     --ease-out: cubic-bezier(0.15, 0, 0.15, 1);
@@ -166,4 +169,4 @@ img {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
+}

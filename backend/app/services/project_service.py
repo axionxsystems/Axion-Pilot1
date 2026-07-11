@@ -1,14 +1,135 @@
+from collections import Counter
+from datetime import datetime, date
+
 from sqlalchemy.orm import Session
+
+from app.models.analytics import DailyAnalytics, FeatureUsage, UserActivity
 from app.models.project import Project, ProjectContent
 from app.schemas.project import ProjectGenerateRequest
 from app.core.generators.project_gen import generate_project
-from datetime import datetime
 import logging
 import os
 
 logger = logging.getLogger(__name__)
 
 class ProjectService:
+    @staticmethod
+    def _merge_feature_counts(existing: dict, new_counts: dict) -> dict:
+        merged = Counter(existing or {})
+        merged.update(new_counts or {})
+        return dict(merged)
+
+    @staticmethod
+    def _get_or_create_daily_analytics(db: Session, org_id: str, analytics_date: date = None) -> DailyAnalytics:
+        analytics_date = analytics_date or date.today()
+        record = (
+            db.query(DailyAnalytics)
+            .filter(DailyAnalytics.org_id == org_id, DailyAnalytics.date == analytics_date)
+            .first()
+        )
+        if not record:
+            record = DailyAnalytics(org_id=org_id, date=analytics_date, features_used={})
+            db.add(record)
+            db.commit()
+            db.refresh(record)
+        return record
+
+    @staticmethod
+    def _log_feature_usage(db: Session, org_id: str, feature_name: str, count: int = 1):
+        if count <= 0:
+            return None
+        entry = FeatureUsage(org_id=org_id, feature_name=feature_name, count=count)
+        db.add(entry)
+        db.commit()
+        return entry
+
+    @staticmethod
+    def _record_user_activity(db: Session, org_id: str, user_id: int, action: str, resource_type: str = "project"):
+        activity = UserActivity(
+            org_id=org_id,
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+        )
+        db.add(activity)
+        db.commit()
+        return activity
+
+    @staticmethod
+    def log_generation_metrics(
+        db: Session,
+        org_id: str,
+        user_id: int,
+        duration_ms: int,
+        documents_created: int,
+        code_lines_generated: int,
+        feature_names: list[str] | None = None,
+        success: bool = True,
+        failed: bool = False,
+    ):
+        analytics_date = date.today()
+        record = ProjectService._get_or_create_daily_analytics(db, org_id, analytics_date)
+
+        if success:
+            old_total_projects = record.projects_generated
+            accumulated_time = record.avg_generation_time_ms * old_total_projects
+            record.projects_generated = old_total_projects + 1
+            record.avg_generation_time_ms = (
+                int((accumulated_time + duration_ms) / record.projects_generated)
+                if record.projects_generated
+                else 0
+            )
+            record.documents_created += documents_created
+            record.code_lines_generated += code_lines_generated
+            record.active_users += 1
+
+            feature_counts = {
+                "project_generation": 1,
+                "documents_created": documents_created,
+                "code_lines_generated": code_lines_generated,
+            }
+            if feature_names:
+                for feature_name in feature_names:
+                    if feature_name:
+                        feature_counts[f"feature:{feature_name}"] = feature_counts.get(
+                            f"feature:{feature_name}", 0
+                        ) + 1
+
+            record.features_used = ProjectService._merge_feature_counts(
+                record.features_used, feature_counts
+            )
+
+        if failed:
+            record.failed_generations += 1
+            record.features_used = ProjectService._merge_feature_counts(
+                record.features_used,
+                {"failed_generation": 1},
+            )
+
+        db.add(record)
+        db.commit()
+
+        ProjectService._record_user_activity(
+            db,
+            org_id,
+            user_id,
+            action="PROJECT_GENERATION_FAILED" if failed else "PROJECT_GENERATION",
+        )
+
+        if success:
+            ProjectService._log_feature_usage(db, org_id, "project_generation", 1)
+        if failed:
+            ProjectService._log_feature_usage(db, org_id, "failed_generation", 1)
+
+        ProjectService._log_feature_usage(db, org_id, "documents_created", documents_created)
+        ProjectService._log_feature_usage(db, org_id, "code_lines_generated", code_lines_generated)
+
+        if feature_names:
+            for feature_name in feature_names:
+                ProjectService._log_feature_usage(db, org_id, f"feature:{feature_name}", 1)
+
+        return record
+
     @staticmethod
     def create_project_skeleton(db: Session, user_id: int, org_id: str, request: ProjectGenerateRequest):
         """
@@ -61,7 +182,8 @@ class ProjectService:
         Runs the actual AI generation pipeline and stores results in ProjectContent.
         """
         logger.info(f"Starting AI pipeline for project {db_project.id}")
-        
+        start_time = datetime.utcnow()
+
         try:
             # Use the existing generator
             ai_results = generate_project(
@@ -74,7 +196,7 @@ class ProjectService:
                 tech_stack=db_project.tech_stack,
                 level="Advanced"
             )
-            
+
             # Map AI results to ProjectContent types
             # sections: idea, architecture, modules, code, report, presentation, viva
             sections = {
@@ -96,16 +218,56 @@ class ProjectService:
                 )
                 db.add(db_content)
                 created_contents.append(db_content)
-            
+
             db_project.progress = 100
             db.commit()
+
+            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            documents_created = sum(
+                1 for section_type, content in sections.items() if section_type != "code" and content
+            )
+            code_files = ai_results.get("files", []) or []
+            code_lines = sum(
+                len(str(file.get("content", "")).splitlines())
+                for file in code_files
+                if isinstance(file, dict)
+            )
+            feature_names = ai_results.get("features", []) or []
+            ProjectService.log_generation_metrics(
+                db,
+                db_project.org_id,
+                db_project.user_id,
+                duration_ms,
+                documents_created,
+                code_lines,
+                feature_names,
+                success=True,
+                failed=False,
+            )
+
             logger.info(f"AI pipeline completed for project {db_project.id}")
             return created_contents
-            
+
         except Exception as e:
             logger.error(f"AI Pipeline Failed: {e}")
-            # Fallback to mock if AI fails for any reason (e.g. API key)
-            return ProjectService.run_mock_pipeline(db, db_project)
+            fallback_contents = ProjectService.run_mock_pipeline(db, db_project)
+            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            documents_created = len(fallback_contents)
+            code_lines = sum(
+                len(str(content).splitlines()) for content in fallback_contents if isinstance(content, dict)
+            )
+            ProjectService.log_generation_metrics(
+                db,
+                db_project.org_id,
+                db_project.user_id,
+                duration_ms,
+                documents_created,
+                code_lines,
+                feature_names=None,
+                success=True,
+                failed=True,
+            )
+            return fallback_contents
 
     @staticmethod
     def run_mock_pipeline(db: Session, db_project: Project):
@@ -131,7 +293,10 @@ class ProjectService:
             )
             db.add(db_content)
             created_contents.append(db_content)
-        
+
+        db_project.progress = 100
+        db.commit()
+        return created_contents
     @staticmethod
     def list_projects(db: Session, user_id: int, org_id: str = None):
         """
