@@ -1,6 +1,16 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
+export interface Branding {
+    brand_name?: string | null;
+    primary_color?: string | null;
+    secondary_color?: string | null;
+    accent_color?: string | null;
+    support_email?: string | null;
+    logo_filename?: string | null;
+    logo_url?: string | null;
+}
+
 export interface User {
     id: number;
     email: string;
@@ -11,6 +21,7 @@ export interface User {
     name?: string;
     mobile?: string;
     avatar_url?: string;
+    org_id?: string | null;
 }
 
 export interface ProjectRequest {
@@ -124,6 +135,53 @@ export const api = {
             headers: authHeaders(),
         });
         if (!res.ok) throw new Error('Not authorized');
+        return res.json();
+    },
+
+    getOrgBranding: async (orgId: string) => {
+        const res = await fetch(`${API_BASE_URL}/v1/organizations/${orgId}/branding`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) throw new Error('Failed to fetch organization branding');
+        return res.json();
+    },
+
+    updateOrgBranding: async (orgId: string, data: Partial<Branding>) => {
+        const res = await fetch(`${API_BASE_URL}/v1/organizations/${orgId}/branding`, {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to update branding');
+        }
+        return res.json();
+    },
+
+    uploadOrgBrandingLogo: async (orgId: string, file: File) => {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch(`${API_BASE_URL}/v1/organizations/${orgId}/branding/logo`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${getToken()}`,
+            },
+            body: form,
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to upload branding logo');
+        }
+        return res.json();
+    },
+
+    deleteOrgBrandingLogo: async (orgId: string) => {
+        const res = await fetch(`${API_BASE_URL}/v1/organizations/${orgId}/branding/logo`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+        });
+        if (!res.ok) throw new Error('Failed to delete logo');
         return res.json();
     },
 
@@ -433,5 +491,57 @@ export const api = {
         } catch {
             return [];
         }
+    },
+
+    // ── Code editor ────────────────────────────────────────────────────────
+    code: {
+        getTree: async (root: string = "") => {
+            const res = await fetch(`${API_BASE_URL}/v1/code/tree?root=${encodeURIComponent(root)}`, {
+                headers: authHeaders(),
+            });
+            if (!res.ok) throw new Error("Failed to load file tree");
+            return res.json();
+        },
+        getFile: async (path: string) => {
+            const res = await fetch(`${API_BASE_URL}/v1/code/file?path=${encodeURIComponent(path)}`, {
+                headers: authHeaders(),
+            });
+            if (!res.ok) throw new Error("Failed to load file");
+            return res.json();
+        },
+        saveFile: async (path: string, content: string) => {
+            const res = await fetch(`${API_BASE_URL}/v1/code/file`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({ path, content }),
+            });
+            if (!res.ok) throw new Error("Failed to save file");
+            return res.json();
+        },
+        execute: async (language: string, code: string, timeout: number = 30) => {
+            const res = await fetch(`${API_BASE_URL}/v1/code/execute`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({ language, code, timeout }),
+            });
+            if (!res.ok) throw new Error("Failed to execute code");
+            return res.json();
+        },
+        improve: async (fileId: string, currentCode: string, userRequest: string) => {
+            const res = await fetch(`${API_BASE_URL}/v1/code/improve`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({ file_id: fileId, current_code: currentCode, user_request: userRequest }),
+            });
+            if (!res.ok) throw new Error("Failed to request code improvement");
+            return res.json();
+        },
+        getPreviewHtml: async (file: string) => {
+            const res = await fetch(`${API_BASE_URL}/v1/code/preview?file=${encodeURIComponent(file)}`, {
+                headers: authHeaders(),
+            });
+            if (!res.ok) throw new Error("Failed to load preview");
+            return res.text();
+        },
     },
 };

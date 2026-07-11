@@ -19,13 +19,17 @@ alembic
 slowapi
 passlib[bcrypt]
 redis>=4.0
-aioredis>=2.0
-python-jose[cryptography]
-email-validator
+celery>=5.3
+python-jose[cryptography]==3.3.0
 httpx
+authlib==1.3.0
+python3-saml==1.16.0
+email-validator
 webauthn
 cbor2
 
 # Stripe for payment processing
 stripe
+reportlab
+anthropic
 

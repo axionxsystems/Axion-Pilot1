@@ -2,19 +2,24 @@
 Billing API Routes - Stripe integration endpoints.
 Handles subscriptions, checkouts, usage tracking, and plan changes.
 """
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
+import io
 import logging
 
 from app.database import get_db
 from app.core.stripe_config import PricingTier, StripeErrorCode
+from app.models.organization import Organization
+from app.models.stripe_billing import Invoice
+from app.middleware.tenant import get_current_org_id
 from app.services.stripe_service import (
     StripeCustomerService, StripeSubscriptionService, UsageMetricsService,
     StripeInvoiceService,
 )
-from app.middleware.tenant import get_current_org_id
-from app.models.organization import Organization
 from pydantic import BaseModel, EmailStr
 
 logger = logging.getLogger(__name__)
@@ -52,6 +57,43 @@ class UsageResponse(BaseModel):
     usage: dict
     limits: dict
     billing_period: dict
+
+
+class InvoiceLineItemResponse(BaseModel):
+    description: str
+    quantity: int
+    unit_price: int
+    amount: int
+    tax_rate: float
+    tax_amount: int
+
+
+class InvoiceResponse(BaseModel):
+    id: str
+    invoice_number: Optional[str]
+    stripe_invoice_id: str
+    org_id: str
+    customer_id: Optional[str]
+    customer_email: Optional[EmailStr]
+    amount: int
+    subtotal: int
+    tax_rate: float
+    tax_amount: int
+    total: int
+    currency: str
+    status: str
+    invoice_date: Optional[str]
+    due_date: Optional[str]
+    paid_at: Optional[str]
+    pdf_path: Optional[str]
+    line_items: List[InvoiceLineItemResponse]
+    payments: Optional[List[dict]]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+
+
+class InvoiceSendRequest(BaseModel):
+    recipient_email: Optional[EmailStr] = None
 
 
 # ── Checkout Endpoint ─────────────────────────────────────────────────────────
@@ -370,3 +412,195 @@ async def can_generate_project(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to check limit",
         )
+
+# ── Invoice Management ─────────────────────────────────────────────────────────
+
+@router.get("/invoices/{org_id}", response_model=List[InvoiceResponse])
+async def list_invoices(
+    org_id: str,
+    current_org_id: str = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
+):
+    if org_id != current_org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    try:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Organization not found",
+            )
+        invoice_records = db.query(Invoice).filter(
+            Invoice.org_id == org_id
+        ).order_by(Invoice.invoice_date.desc()).all()
+        return [StripeInvoiceService._serialize_invoice(invoice) for invoice in invoice_records]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing invoices for org {org_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list invoices",
+        )
+
+
+@router.get("/invoices/{org_id}/{invoice_id}", response_model=InvoiceResponse)
+async def get_invoice(
+    org_id: str,
+    invoice_id: str,
+    current_org_id: str = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
+):
+    if org_id != current_org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    invoice = db.query(Invoice).filter(
+        Invoice.id == invoice_id,
+        Invoice.org_id == org_id,
+    ).first()
+    if not invoice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invoice not found",
+        )
+
+    return StripeInvoiceService._serialize_invoice(invoice)
+
+
+@router.get("/invoices/{org_id}/{invoice_id}/download")
+async def download_invoice_pdf(
+    org_id: str,
+    invoice_id: str,
+    current_org_id: str = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
+):
+    if org_id != current_org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    invoice = db.query(Invoice).filter(
+        Invoice.id == invoice_id,
+        Invoice.org_id == org_id,
+    ).first()
+    if not invoice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invoice not found",
+        )
+
+    pdf_bytes = StripeInvoiceService.get_invoice_pdf_bytes(db, invoice)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=invoice_{invoice.stripe_invoice_id}.pdf"},
+    )
+
+
+@router.post("/invoices/{org_id}/{invoice_id}/send")
+async def send_invoice(
+    org_id: str,
+    invoice_id: str,
+    request: InvoiceSendRequest,
+    current_org_id: str = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
+):
+    if org_id != current_org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    invoice = db.query(Invoice).filter(
+        Invoice.id == invoice_id,
+        Invoice.org_id == org_id,
+    ).first()
+    if not invoice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invoice not found",
+        )
+
+    recipient = request.recipient_email
+    if not recipient:
+        recipient = invoice.customer.email if invoice.customer else None
+    if not recipient:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        recipient = org.meta.get("admin_email") if org and org.meta else None
+
+    if not recipient:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No recipient email available for invoice sending",
+        )
+
+    if not StripeInvoiceService.send_invoice_email(db, invoice, recipient):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send invoice email",
+        )
+
+    return {
+        "message": "Invoice email sent",
+        "recipient": recipient,
+    }
+
+
+@router.get("/reports/{org_id}/monthly")
+async def monthly_financial_report(
+    org_id: str,
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    current_org_id: str = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
+):
+    if org_id != current_org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    now = datetime.utcnow()
+    year = year or now.year
+    month = month or now.month
+    if month < 1 or month > 12:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Month must be between 1 and 12",
+        )
+
+    start = datetime(year, month, 1)
+    end = datetime(year + (month // 12), (month % 12) + 1, 1)
+    report = StripeInvoiceService.get_financial_report(db, org_id, start, end)
+    report["period"] = {"year": year, "month": month}
+    return report
+
+
+@router.get("/reports/{org_id}/annual")
+async def annual_financial_report(
+    org_id: str,
+    year: Optional[int] = None,
+    current_org_id: str = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
+):
+    if org_id != current_org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    now = datetime.utcnow()
+    year = year or now.year
+    start = datetime(year, 1, 1)
+    end = datetime(year + 1, 1, 1)
+    report = StripeInvoiceService.get_financial_report(db, org_id, start, end)
+    report["period"] = {"year": year}
+    return report

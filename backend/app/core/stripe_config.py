@@ -13,13 +13,25 @@ from datetime import datetime
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "").strip()
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "").strip()
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
+import logging
+ENV = os.environ.get("ENV", "development")
+logger = logging.getLogger(__name__)
 
-if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith("sk_"):
-    raise ValueError("STRIPE_SECRET_KEY not set or invalid (must start with 'sk_')")
-if not STRIPE_PUBLISHABLE_KEY or not STRIPE_PUBLISHABLE_KEY.startswith("pk_"):
-    raise ValueError("STRIPE_PUBLISHABLE_KEY not set or invalid (must start with 'pk_')")
-if not STRIPE_WEBHOOK_SECRET or not STRIPE_WEBHOOK_SECRET.startswith("whsec_"):
-    raise ValueError("STRIPE_WEBHOOK_SECRET not set or invalid (must start with 'whsec_')")
+# In production we require valid Stripe keys; in development warn and continue with placeholders
+if ENV == "production":
+    if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith("sk_"):
+        raise ValueError("STRIPE_SECRET_KEY not set or invalid (must start with 'sk_')")
+    if not STRIPE_PUBLISHABLE_KEY or not STRIPE_PUBLISHABLE_KEY.startswith("pk_"):
+        raise ValueError("STRIPE_PUBLISHABLE_KEY not set or invalid (must start with 'pk_')")
+    if not STRIPE_WEBHOOK_SECRET or not STRIPE_WEBHOOK_SECRET.startswith("whsec_"):
+        raise ValueError("STRIPE_WEBHOOK_SECRET not set or invalid (must start with 'whsec_')")
+else:
+    if not STRIPE_SECRET_KEY:
+        logger.warning("STRIPE_SECRET_KEY not set; using placeholder in development")
+    if not STRIPE_PUBLISHABLE_KEY:
+        logger.warning("STRIPE_PUBLISHABLE_KEY not set; using placeholder in development")
+    if not STRIPE_WEBHOOK_SECRET:
+        logger.warning("STRIPE_WEBHOOK_SECRET not set; webhook signature verification will be disabled in development")
 
 
 # ── Environment ───────────────────────────────────────────────────────────────
@@ -245,11 +257,14 @@ SUPPORTED_CURRENCIES = ["usd", "eur", "gbp", "aud", "cad"]
 # Success/cancel redirect URLs (set in environment)
 CHECKOUT_SUCCESS_URL = os.environ.get("CHECKOUT_SUCCESS_URL", "")
 CHECKOUT_CANCEL_URL = os.environ.get("CHECKOUT_CANCEL_URL", "")
-
-if not CHECKOUT_SUCCESS_URL or not CHECKOUT_CANCEL_URL:
-    raise ValueError(
-        "CHECKOUT_SUCCESS_URL and CHECKOUT_CANCEL_URL must be set in environment"
-    )
+if ENV == "production":
+    if not CHECKOUT_SUCCESS_URL or not CHECKOUT_CANCEL_URL:
+        raise ValueError(
+            "CHECKOUT_SUCCESS_URL and CHECKOUT_CANCEL_URL must be set in environment"
+        )
+else:
+    if not CHECKOUT_SUCCESS_URL or not CHECKOUT_CANCEL_URL:
+        logger.warning("CHECKOUT_SUCCESS_URL or CHECKOUT_CANCEL_URL not set; using empty defaults in development")
 
 
 # ── Idempotency & Retry ───────────────────────────────────────────────────────

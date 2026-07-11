@@ -202,8 +202,12 @@ class Invoice(Base):
                                   nullable=False, index=True)
     stripe_invoice_id    = Column(String(255), nullable=False, unique=True, index=True)
     
-    # Amount in cents
+    # Amounts in cents for consistent accounting
     amount               = Column(Integer, nullable=False)
+    subtotal             = Column(Integer, default=0, nullable=False)
+    tax_rate             = Column(Float, default=0.0, nullable=False)
+    tax_amount           = Column(Integer, default=0, nullable=False)
+    total                = Column(Integer, default=0, nullable=False)
     currency             = Column(String(3), default="usd", nullable=False)
     
     status               = Column(
@@ -215,12 +219,14 @@ class Invoice(Base):
     # Payment tracking
     paid_at              = Column(DateTime, nullable=True)
     payment_intent_id    = Column(String(255), nullable=True)
+    pdf_path             = Column(String(255), nullable=True)
+    invoice_number       = Column(String(100), nullable=True)
     
     # Invoice dates
     invoice_date         = Column(DateTime, nullable=False)
     due_date             = Column(DateTime, nullable=True)
     
-    # Line items (JSON for flexibility)
+    # Line items (JSON for quick serialization)
     line_items           = Column(JSON, nullable=True, default=list)
     
     created_at           = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -229,10 +235,55 @@ class Invoice(Base):
     # ── Relationships ─────────────────────────────────────────────────────────
     customer             = relationship("StripeCustomer", back_populates="invoices")
     organization         = relationship("Organization", foreign_keys=[org_id])
+    invoice_line_items   = relationship("InvoiceLineItem", back_populates="invoice",
+                                       cascade="all, delete-orphan")
+    payments             = relationship("InvoicePayment", back_populates="invoice",
+                                       cascade="all, delete-orphan")
 
     __table_args__       = (
         UniqueConstraint("org_id", "stripe_invoice_id", name="uq_invoice_org_stripe_id"),
     )
+
+
+class InvoiceLineItem(Base):
+    """
+    Individual line items for an invoice.
+    """
+    __tablename__ = "invoice_line_items"
+
+    id                   = _uuid_pk()
+    invoice_id           = Column(String(36), ForeignKey("stripe_invoices.id", ondelete="CASCADE"),
+                                  nullable=False, index=True)
+    description          = Column(Text, nullable=False, default="")
+    quantity             = Column(Integer, default=1, nullable=False)
+    unit_price           = Column(Integer, default=0, nullable=False)
+    amount               = Column(Integer, default=0, nullable=False)
+    tax_rate             = Column(Float, default=0.0, nullable=False)
+    tax_amount           = Column(Integer, default=0, nullable=False)
+    created_at           = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at           = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    invoice              = relationship("Invoice", back_populates="invoice_line_items")
+
+
+class InvoicePayment(Base):
+    """
+    Payment receipt record for a Stripe invoice.
+    """
+    __tablename__ = "invoice_payments"
+
+    id                       = _uuid_pk()
+    invoice_id               = Column(String(36), ForeignKey("stripe_invoices.id", ondelete="CASCADE"),
+                                        nullable=False, index=True)
+    stripe_payment_intent_id = Column(String(255), nullable=True, index=True)
+    amount                   = Column(Integer, nullable=False)
+    currency                 = Column(String(3), default="usd", nullable=False)
+    status                   = Column(String(50), nullable=False)
+    paid_at                  = Column(DateTime, nullable=True)
+    created_at               = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at               = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    invoice                  = relationship("Invoice", back_populates="payments")
 
 
 # ── PaymentIntent ─────────────────────────────────────────────────────────────

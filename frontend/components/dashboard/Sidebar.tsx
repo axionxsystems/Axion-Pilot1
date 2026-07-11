@@ -11,7 +11,8 @@ import {
     User,
     Layers,
     Shield,
-    Zap
+    Zap,
+    Code2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +32,7 @@ export function Sidebar({ className }: SidebarProps) {
     const baseLinks = [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "My Vault", href: "/dashboard/projects", icon: Layers },
+        { name: "Code Editor", href: "/dashboard/code", icon: Code2 },
         { name: "Profile", href: "/dashboard/profile", icon: User },
         { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
         ...(user?.email === "niyant214@gmail.com" ? [

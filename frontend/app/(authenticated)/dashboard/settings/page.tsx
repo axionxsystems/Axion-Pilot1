@@ -4,6 +4,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { ProfileCard } from "./components/ProfileCard";
 import { SecurityCard } from "./components/SecurityCard";
 import { AdvancedSettings } from "./components/AdvancedSettings";
+import { BrandingCard } from "./components/BrandingCard";
 import { Settings as SettingsIcon, ShieldIcon, HelpCircle } from "lucide-react";
 
 export default function SettingsPage() {
@@ -59,12 +60,21 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Advanced Section */}
-                <section className="space-y-8 pb-20">
+                <section className="space-y-8">
                     <div className="flex items-center gap-3 px-2">
                         <HelpCircle className="w-4 h-4 text-zinc-600" />
                         <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[3px]">Environment</h2>
                     </div>
                     <AdvancedSettings />
+                </section>
+
+                {/* Branding Section */}
+                <section className="space-y-8 pb-20">
+                    <div className="flex items-center gap-3 px-2">
+                        <HelpCircle className="w-4 h-4 text-zinc-600" />
+                        <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[3px]">Branding</h2>
+                    </div>
+                    <BrandingCard />
                 </section>
             </div>
         </div>

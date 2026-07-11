@@ -17,6 +17,9 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    auth_method = Column(String(20), default="password", nullable=False)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)

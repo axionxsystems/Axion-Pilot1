@@ -52,6 +52,45 @@ class ProjectGenerateRequest(BaseModel):
     class Config:
         populate_by_name = True
 
+class TeamCreateRequest(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class ShareRequest(BaseModel):
+    team_id: str
+    access_level: str = Field(..., pattern="^(read|edit|admin)$")
+
+class CommentRequest(BaseModel):
+    content: str
+    file_reference: Optional[str] = None
+
+class CommentResponse(BaseModel):
+    id: str
+    author: str
+    content: str
+    file_reference: Optional[str] = None
+    created_at: Any
+
+    class Config:
+        from_attributes = True
+
+class TeamResponse(BaseModel):
+    team_id: str
+    name: str
+    description: Optional[str] = None
+    members: List[Dict[str, Any]]
+
+    class Config:
+        from_attributes = True
+
+class TeamProjectResponse(BaseModel):
+    id: int
+    title: str
+    access: str
+
+    class Config:
+        from_attributes = True
+
 class ProjectFullResponse(BaseModel):
     id: int
     user_id: int
