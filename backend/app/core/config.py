@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
 
+    # ── GitHub pattern mining ─────────────────────────────────────────────────
+    # Optional. Raises GitHub API rate limits from 60/h to 5000/h for the
+    # open-source pattern miner (app/services/github_insights.py). A read-only
+    # fine-grained token with Public Repositories access is enough.
+    GITHUB_TOKEN: str = ""
+
     # ── Stripe billing ────────────────────────────────────────────────────────
     STRIPE_SECRET_KEY: str = ""
     STRIPE_PUBLISHABLE_KEY: str = ""

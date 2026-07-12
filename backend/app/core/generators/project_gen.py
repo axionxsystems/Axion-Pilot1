@@ -284,8 +284,14 @@ if __name__ == '__main__':
         ]
 
 
-def generate_project(api_key, provider, domain, topic, description, difficulty, tech_stack, level, ai_config=None):
+def generate_project(api_key, provider, domain, topic, description, difficulty, tech_stack, level,
+                     ai_config=None, github_context=""):
     client = LLMClient(api_key=api_key, provider=provider)
+
+    # Optional block of engineering patterns mined from top open-source repos
+    # (see app/services/github_insights.py). Appended to the architecture and
+    # code prompts so output mirrors real-world project standards.
+    github_block = f"\n\n{github_context}\n" if github_context else ""
 
     # Extract AI Config
     config = ai_config or {}
@@ -323,7 +329,7 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
             overview=overview,
             features=", ".join(features_list[:5]),  # limit length for local LLM
             tech_stack=tech_stack
-        )
+        ) + github_block
         res_arch = client.generate(arch_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,
                                    temperature=temp, max_tokens=tokens)
         arch_data = extract_json(res_arch) or {}
@@ -336,14 +342,14 @@ def generate_project(api_key, provider, domain, topic, description, difficulty, 
         if "flask" in tech_stack.lower():
             code_prompt = FLASK_CODEBASE_PROMPT.format(
                 title=title, overview=overview, difficulty=difficulty, level=level
-            )
+            ) + github_block
         else:
             code_prompt = CODEBASE_GENERATION_PROMPT.format(
                 architecture=arch_data.get("system_architecture", "Standard MVC Architecture"),
                 tech_stack=tech_stack,
                 difficulty=difficulty,
                 level=level
-            )
+            ) + github_block
 
         res_code = client.generate(code_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,
                                    temperature=temp, max_tokens=tokens)
