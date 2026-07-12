@@ -6,6 +6,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import logging
 from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi.errors import RateLimitExceeded
@@ -14,6 +15,8 @@ from slowapi import _rate_limit_exceeded_handler
 # from app.utils.ollama_generator import generate_code, generate_documentation, generate_viva_questions
 
 
+from app.core.config import settings
+from app.core.observability import setup_logging, init_sentry, RequestIDMiddleware
 from app.database import engine, Base
 from app.api import auth, users, projects, viva, passkey, admin
 from app.api import v1
@@ -23,19 +26,22 @@ from app.middleware.tenant import TenantMiddleware
 # ── Ensure all models are imported so create_all sees them ────────────────────
 import app.models  # noqa: F401 — registers every model module (see app/models/__init__.py)
 
-# ── Logging ──────────────────────────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-)
-
-# ── DB tables ─────────────────────────────────────────────────────────────────
-# SQLite: Creates the database file on first run
-Base.metadata.create_all(bind=engine)
+# ── Config validation, logging & error tracking ───────────────────────────────
+# Fail fast if a production deployment is misconfigured (weak SECRET_KEY, SQLite,
+# missing CORS origins). No-op in development.
+settings.validate_production()
+setup_logging()
+init_sentry()
 
 # ── Environment ───────────────────────────────────────────────────────────────
-ENV = os.environ.get("ENV", "development")
-IS_PROD = ENV == "production"
+ENV = settings.ENV
+IS_PROD = settings.is_production
+
+# ── DB tables ─────────────────────────────────────────────────────────────────
+# SQLite (dev): creates the database file on first run. In production, schema is
+# managed by Alembic migrations, so only auto-create outside production.
+if not IS_PROD:
+    Base.metadata.create_all(bind=engine)
 
 # ── Security headers middleware ────────────────────────────────────────────────
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -70,10 +76,9 @@ app = FastAPI(
 # ── CORS ──────────────────────────────────────────────────────────────────────
 # Restricted Origins: no wildcards in production
 # Allow all origins in dev for easier testing from different hosts/IPs
-_raw_origins = os.environ.get("ALLOWED_ORIGINS", "")
 allowed_origins = (
-    [o.strip() for o in _raw_origins.split(",") if o.strip()]
-    if IS_PROD and _raw_origins
+    settings.allowed_origins_list
+    if IS_PROD and settings.allowed_origins_list
     else ["*"]
 )
 
@@ -91,11 +96,12 @@ app.add_middleware(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SecurityHeadersMiddleware)
+# RequestIDMiddleware: correlate logs/errors per request via X-Request-ID.
+app.add_middleware(RequestIDMiddleware)
 
 # TenantMiddleware: extracts org_id from JWT and stores in context var.
 # Registered AFTER SecurityHeaders so it runs on the inner side of the stack.
-_JWT_SECRET = os.environ.get("SECRET_KEY", "")
-app.add_middleware(TenantMiddleware, secret_key=_JWT_SECRET)
+app.add_middleware(TenantMiddleware, secret_key=settings.SECRET_KEY)
 
 # RateLimitMiddleware: enforces rate limits for API keys
 from app.middleware.rate_limiting import RateLimitMiddleware
@@ -122,8 +128,24 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint for auto-heal platform checks."""
+    """Liveness probe — process is up. Cheap, no dependencies touched."""
     return {"status": "ok", "env": ENV}
+
+
+@app.get("/ready")
+async def ready():
+    """Readiness probe — verifies the database is reachable before taking traffic."""
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        logging.getLogger(__name__).error("Readiness check failed: %s", e)
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "unavailable", "detail": "database unreachable"},
+        )
+    return {"status": "ready", "env": ENV}
 
 
 

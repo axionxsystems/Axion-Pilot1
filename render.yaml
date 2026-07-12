@@ -1,0 +1,97 @@
+# Render Blueprint — deploys the backend API + Celery worker + Redis + Postgres.
+# The frontend deploys separately on Vercel (see README → Deployment).
+#
+# Usage: push this repo to GitHub, then in Render → "New +" → "Blueprint" and
+# point it at this file. Fill the secret env vars marked `sync: false` in the
+# Render dashboard after the first deploy.
+services:
+  - type: web
+    name: axion-pilot-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /ready
+    # Run DB migrations before each deploy (production skips create_all).
+    preDeployCommand: alembic upgrade head
+    envVars:
+      - key: ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: axion-pilot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: axion-pilot-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: axion-pilot-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: axion-pilot-redis
+          property: connectionString
+      - key: LOG_JSON
+        value: "true"
+      # Secrets — set these in the Render dashboard (not committed):
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: AI_PROVIDER
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+  - type: worker
+    name: axion-pilot-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: celery -A app.celery worker --loglevel=info
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: axion-pilot-db
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: axion-pilot-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: axion-pilot-redis
+          property: connectionString
+      - key: AI_PROVIDER
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+
+  - type: redis
+    name: axion-pilot-redis
+    ipAllowList: []          # only internal services
+    plan: free
+
+databases:
+  - name: axion-pilot-db
+    plan: free

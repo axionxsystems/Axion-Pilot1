@@ -14,9 +14,10 @@ class APIKey(Base):
     __tablename__ = "api_keys"
     __table_args__ = (
         Index("ix_api_keys_org_id_active", "org_id", "active"),
-        Index("ix_api_keys_key_prefix", "key_prefix"),
         Index("ix_api_keys_created_by", "created_by_user_id"),
-        Index("ix_api_keys_id", "id"),
+        # Note: ix_api_keys_key_prefix is created by key_prefix's index=True below,
+        # and the id column already has a primary-key index — declaring them here
+        # too produces duplicate-index errors on a fresh schema create.
     )
     
     # Primary & Foreign Keys

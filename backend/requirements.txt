@@ -3,6 +3,7 @@ uvicorn
 gunicorn
 python-multipart
 pydantic
+pydantic-settings
 python-dotenv
 # Core dependencies from original project
 
@@ -32,4 +33,7 @@ cbor2
 stripe
 reportlab
 anthropic
+
+# Observability (optional — Sentry only activates if SENTRY_DSN is set)
+sentry-sdk[fastapi]
 
