@@ -16,3 +16,4 @@ from app.models import stripe_billing  # noqa: F401 — Stripe billing models
 from app.models import job  # noqa: F401
 from app.models import sso  # noqa: F401 — SSOConfig, SSOSession
 from app.models import collaboration  # noqa: F401 — Team, TeamMember, ProjectShare, Comment
+from app.models import github_pattern  # noqa: F401 — GitHubPatternCache (pattern-mining digests)

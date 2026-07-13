@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtualenvs
+venv/
+.venv/
+env/
+
+# Local data & secrets (never bake into an image)
+.env
+*.db
+*.sqlite3
+sql_app.db
+workspaces/
+exec_results/
+
+# Dev tooling
+.vscode/
+.idea/
+scratch/
+tests/
+
+# VCS
+.git/
+.gitignore

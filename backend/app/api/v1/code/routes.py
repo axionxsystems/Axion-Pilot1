@@ -1,5 +1,5 @@
 """Code runner and improver endpoints."""
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -12,9 +12,12 @@ from app.services.sandbox import run_code_in_docker
 from app.llm.code_improver import improve_code
 from app.auth.dependencies import get_current_user
 from app.models.user import User
+from app.limiter import limiter, user_or_ip_key
 from fastapi.responses import HTMLResponse
 
-router = APIRouter(prefix="/code", tags=["Code"])
+# Path prefix ("/code") is applied by app/api/v1/__init__.py at include time,
+# matching the convention used by the other v1 sub-routers.
+router = APIRouter(tags=["Code"])
 
 # Dedicated workspace root for user-editable/executable code — never the backend
 # source tree itself, so a path-traversal bug here can't expose app source/secrets.
@@ -51,7 +54,9 @@ class ExecuteResponse(BaseModel):
 
 
 @router.post("/execute", response_model=ExecuteResponse)
+@limiter.limit("20/minute", key_func=user_or_ip_key)
 async def execute_code(
+    request: Request,
     req: ExecuteRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -95,7 +100,9 @@ class ImproveRequest(BaseModel):
 
 
 @router.post("/improve")
+@limiter.limit("10/minute", key_func=user_or_ip_key)
 async def improve(
+    request: Request,
     req: ImproveRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

@@ -17,5 +17,12 @@ app.conf.beat_schedule = {
         'schedule': 86400.0,
         'args': (),
     },
+    # Weekly re-mine of open-source engineering patterns so generation prompts
+    # keep tracking how the best real-world projects are built.
+    'weekly-github-pattern-refresh': {
+        'task': 'app.tasks.github_refresh.refresh_github_patterns',
+        'schedule': 604800.0,  # 7 days
+        'args': (),
+    },
 }
 app.autodiscover_tasks(['app.tasks'])

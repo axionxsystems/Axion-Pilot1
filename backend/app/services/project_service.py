@@ -184,6 +184,19 @@ class ProjectService:
         logger.info(f"Starting AI pipeline for project {db_project.id}")
         start_time = datetime.utcnow()
 
+        # Best-effort: enrich prompts with engineering patterns mined from top
+        # open-source GitHub repos for this stack. Never blocks generation.
+        github_context = ""
+        try:
+            from app.services.github_insights import get_github_context
+            github_context = get_github_context(
+                db, db_project.tech_stack or "", db_project.domain or ""
+            )
+            if github_context:
+                logger.info(f"GitHub patterns injected for project {db_project.id}")
+        except Exception as e:
+            logger.warning(f"GitHub pattern lookup skipped: {e}")
+
         try:
             # Use the existing generator
             ai_results = generate_project(
@@ -194,7 +207,8 @@ class ProjectService:
                 description=db_project.description or "",
                 difficulty=db_project.difficulty,
                 tech_stack=db_project.tech_stack,
-                level="Advanced"
+                level="Advanced",
+                github_context=github_context
             )
 
             # Map AI results to ProjectContent types

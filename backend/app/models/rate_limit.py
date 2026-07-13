@@ -12,9 +12,9 @@ class RateLimitLog(Base):
     
     __tablename__ = "rate_limit_logs"
     __table_args__ = (
-        Index("ix_rate_limit_logs_api_key_id", "api_key_id"),
-        Index("ix_rate_limit_logs_timestamp", "timestamp"),
-        Index("ix_rate_limit_logs_minute_bucket", "minute_bucket"),
+        # Single-column indexes for api_key_id / timestamp / minute_bucket are
+        # created by each column's index=True below; only the composite index
+        # needs to be declared explicitly here.
         Index("ix_rate_limit_logs_composite", "api_key_id", "timestamp"),
     )
     
